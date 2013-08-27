@@ -77,10 +77,13 @@ void VoroWindow::setup() {
 
 //    Point* verts = servers[sCount].vertsToArray();
 
+//    bool ccw = servers[sCount].ccw(verts, 4);
+//    printf("CCW? %d\n",ccw);
+
     sCount++;
     servers[sCount] = Server(100,100);
 
-    servers[sCount-1].refine(servers[sCount]);
+    servers[sCount-1].refine(&servers[sCount]);
     sCount++;
 
 //    servers[sCount-1].refine(servers[sCount].loc);

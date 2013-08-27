@@ -12,9 +12,9 @@ Server::Server(double x, double y)
     cell.origin = NULL;
 }
 
-void Server::refine(Server t) {
+void Server::refine(Server* t) {
 // Redefine take a new point to be evaluated and calculates the new Cell
-    Point mid = this->mid(this->loc, t.loc);        // Calulate midpoint
+    Point mid = this->mid(this->loc, t->loc);        // Calulate midpoint
 
     printf("Mid X: %g Y:%g\n",mid.x(),mid.y());
 
@@ -27,13 +27,13 @@ void Server::refine(Server t) {
          return;
     }
 
-    Line line = this->getLine(this->loc, t.loc);
-    printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t.loc.x(),t.loc.y(),line.a,line.b,line.c);
+    Line line = this->getLine(this->loc, t->loc);
+    printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t->loc.x(),t->loc.y(),line.a,line.b,line.c);
 
     line = this->getPerpendic(line, mid);
-    printf("PLine from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t.loc.x(),t.loc.y(),line.a,line.b,line.c);
+    printf("PLine from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t->loc.x(),t->loc.y(),line.a,line.b,line.c);
 
-    this->findIntercets(line);
+    Point* intersects = this->findIntercets(line);
 
 }
 
@@ -63,6 +63,20 @@ void Server::updateCell(Point a) {
         pointer->nxt = vNode;                   // Add new vertex
     }
     this->cell.n++;
+}
+
+void Server::recalculateCell(Server* t, Point intersect[2]) {
+    Cell oldCell = this->cell;
+    this->cell.n=0;
+    this->cell.origin = NULL;
+
+    // Test if server is left of intersect-line, used to test ccw
+    bool left = this->isLeftOrOn(this->loc, intersect[0], intersect[1]);
+
+    // Loop
+    if (this->isLeftOrOn(oldCell.origin->loc, intersect[0], intersect[1]) == left) {
+
+    }
 }
 
 Point* Server::findIntercets(Line line) {
@@ -215,4 +229,19 @@ bool Server::pointInPolygon(Point p) {
 
     return oddNodes;
 }
+
+// Takes an array of atleast 3 points and returns if they are ccw
+// **Ref: Stackoverflow, Beta: Math - How to determine if a list of polygon points are in clockwise order?
+// http://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
+bool Server::ccw(Point p[], int n) {
+    double sum = 0;
+
+    // Sum over (x2-x1)(y2+y1)
+    for (int i=0;i<n-1;i++) {
+        sum += (p[i+1].x()-p[i].x())*(p[i+1].y()+p[i].y());
+    }
+    return sum <=0;
+}
+
+
 
