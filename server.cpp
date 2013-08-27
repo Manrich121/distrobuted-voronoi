@@ -8,6 +8,7 @@ Server::Server(){
 Server::Server(double x, double y)
 {
     loc = Point(x,y);
+    cell.n =0;
 }
 
 //void Server::refine(Point p) {
@@ -79,12 +80,18 @@ void Server::send_msg(Server t, Point p){       // enqueue the next point to be 
 
 // Addes the two new  Vertexes
 void Server::updateCell(Point a) {
-    if (this->cell.origin == NULL) {
-        Vertex newV;
-        newV.loc = a;
-        this->cell.origin = &newV;
-        this->cell.n++;
+    Vertex* pointer = this->cell.origin;
+    Vertex *vNode = new Vertex(a);
+    if (pointer == NULL) {
+        this->cell.origin = vNode;
+    }else{
+        while (pointer->nxt != NULL) {           // Loop till end of list
+            pointer = pointer->nxt;
+        }
+        pointer->nxt = vNode;
+
     }
+    this->cell.n++;
 }
 
 
@@ -173,29 +180,41 @@ Point Server::intersect(Line line1, Line line2) {
 //  Note that division by zero is avoided because the division is protected
 //  by the "if" clause which surrounds it.
 
-//bool Server::pointInPolygon(Point p) {
-//    int polySides = this->cell.n;
-//    float x = p.x();
-//    float y = p.y();
-//    float polyYi, polyYj;
-//    float polyXi, polyXj;
-//    int i, j = polySides-1;
-//    bool oddNodes = false;
+bool Server::pointInPolygon(Point p) {
+    int polySides = this->cell.n;
+    float x = p.x();
+    float y = p.y();
+    float polyYi, polyYj;
+    float polyXi, polyXj;
+    int i, j = polySides-1;
+    bool oddNodes = false;
+    Point* verts = vertsToArray();
 
-//    for (i=0; i<polySides; i++) {
-//        polyYi = cell.verts[i].y();
-//        polyXi = cell.verts[i].x();
-//        polyYj = cell.verts[j].y();
-//        polyXj = cell.verts[j].x();
+    for (i=0; i<polySides; i++) {
+        polyYi = verts[i].y();
+        polyXi = verts[i].x();
+        polyYj = verts[j].y();
+        polyXj = verts[j].x();
 
-//        if (((polyYi<= y && polyYj>=y) ||   (polyYj<= y && polyYi>=y)) &&  (polyXi<=x || polyXj<=x)) {
-//            if (polyXi+(y-polyYi)/(polyYj-polyYi)*(polyXj-polyXi)<=x) {
-//                oddNodes=!oddNodes;
-//            }
-//        }
+        if (((polyYi<= y && polyYj>=y) ||   (polyYj<= y && polyYi>=y)) &&  (polyXi<=x || polyXj<=x)) {
+            if (polyXi+(y-polyYi)/(polyYj-polyYi)*(polyXj-polyXi)<=x) {
+                oddNodes=!oddNodes;
+            }
+        }
 
-//        j=i;
-//    }
+        j=i;
+    }
 
-//    return oddNodes;
-//}
+    return oddNodes;
+}
+
+Point* Server::vertsToArray() {
+    int i =0;
+    Point* arr = new Point[this->cell.n];
+    Vertex* pointer = this->cell.origin;
+
+    while (pointer != NULL) {
+        arr[i] = pointer->loc;
+    }
+    return arr;
+}

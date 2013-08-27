@@ -19,8 +19,11 @@ VoroWindow::~VoroWindow()
 }
 
 void VoroWindow::paintEvent(QPaintEvent*) {
-    QPainter painter(this);
+    int n;
+    int j = 0;
+    Vertex* pointer;
 
+    QPainter painter(this);
     // Pen
     QPen pen;
     pen.setWidth(2);
@@ -29,16 +32,21 @@ void VoroWindow::paintEvent(QPaintEvent*) {
 
     QPointF points[sCount];
     for (int i=0;i<sCount;i++) {
-        int n = servers[i].cell.n;
+        n = servers[i].cell.n;
         points[i] = pointToQp(servers[i].loc);
 
         // Draw current server cell
-//        QPoint polyPoints[n];
-//        for (int j=0; j<n; j++) {
-//            polyPoints[j] = pointToQp(servers[i].cell.verts[j].loc);
-//        }
-//        painter.drawPolygon(polyPoints,4);
+        QPoint polyPoints[n];
 
+        pointer = servers[i].cell.origin;
+        while (pointer != NULL) {
+
+            polyPoints[j] = pointToQp(pointer->loc);
+            pointer = pointer->nxt;
+            j++;
+
+        }
+        painter.drawPolygon(polyPoints,4);
     }
 
     pen.setWidth(5);
@@ -57,6 +65,7 @@ QPoint VoroWindow::pointToQp(Point p) {
 void VoroWindow::setup() {
     // Insert first server
     servers[sCount] = Server(150,150);
+    servers[sCount].cell.origin = NULL;
 
     // Construct cell ccw and assign cell to 1st server
     servers[sCount].updateCell(Point(0,0));
@@ -69,7 +78,7 @@ void VoroWindow::setup() {
     servers[sCount] = Server(100,100);
 
 //    servers[sCount-1].refine(servers[sCount].loc);
-    sCount++;
+//    sCount++;
 //    servers[sCount-1].refine(servers[sCount].loc);
 //    sCount++;
 

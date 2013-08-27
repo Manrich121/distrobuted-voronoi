@@ -5,7 +5,13 @@
 #include <queue>            // std::queue
 
 
-struct Vertex {
+class Vertex {
+public:
+    Vertex(Point a){
+        loc = a;
+        nxt = NULL;
+    }
+
     Point loc;
     Vertex* nxt;            // Pointer to next vertex in polygon
 };
@@ -27,6 +33,7 @@ public:
 //    Point third(Vertex v, Point a, Point b);    // Returns the point assosiated with v
                                                 // that is not a or b
     void updateCell(Point a);
+    Point* vertsToArray();
 
     // Geometry functions
     Point mid(Point a, Point b);
