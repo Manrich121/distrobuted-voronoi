@@ -39,14 +39,16 @@ void VoroWindow::paintEvent(QPaintEvent*) {
         QPoint polyPoints[n];
 
         pointer = servers[i].cell.origin;
-        while (pointer != NULL) {
+        if (pointer != NULL) {
+            while (pointer != NULL) {
 
-            polyPoints[j] = pointToQp(pointer->loc);
-            pointer = pointer->nxt;
-            j++;
+                polyPoints[j] = pointToQp(pointer->loc);
+                pointer = pointer->nxt;
+                j++;
 
+            }
+            painter.drawPolygon(polyPoints,4);
         }
-        painter.drawPolygon(polyPoints,4);
     }
 
     pen.setWidth(5);
@@ -73,18 +75,13 @@ void VoroWindow::setup() {
     servers[sCount].updateCell(Point(400,400));
     servers[sCount].updateCell(Point(0,400));
 
-    Point* verts = servers[sCount].vertsToArray();
-
-    for (int i=0; i<servers[sCount].cell.n;i++) {
-        double x= verts[i].x();
-        double y = verts[i].y();
-        printf("Verts X: %g Y:%g\n",x,y);
-    }
+//    Point* verts = servers[sCount].vertsToArray();
 
     sCount++;
     servers[sCount] = Server(100,100);
 
-//    servers[sCount-1].refine(servers[sCount].loc);
+    servers[sCount-1].refine(servers[sCount]);
+    sCount++;
 
 //    servers[sCount-1].refine(servers[sCount].loc);
 //    sCount++;

@@ -8,63 +8,34 @@ Server::Server(){
 Server::Server(double x, double y)
 {
     loc = Point(x,y);
-    cell.n =0;
+    cell.n = 0;
+    cell.origin = NULL;
 }
 
-void Server::refine(Point p) {
+void Server::refine(Server t) {
 // Redefine take a new point to be evaluated and calculates the new Cell
-    Point mid = this->mid(this->loc, p);        // Calulate midpoint
+    Point mid = this->mid(this->loc, t.loc);        // Calulate midpoint
 
     printf("Mid X: %g Y:%g\n",mid.x(),mid.y());
 
+    // Test insidePolygon()
     if (this->pointInPolygon(mid)){
-        // Test insidePolygon()
+// TODO Insert t into this->neighbourList
         printf("Inside polygon? YES\n");
     }else{
          printf("Inside polygon? NO\n");
+         return;
     }
+
+    Line line = this->getLine(this->loc, t.loc);
+    printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t.loc.x(),t.loc.y(),line.a,line.b,line.c);
+
+    line = this->getPerpendic(line, mid);
+    printf("PLine from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t.loc.x(),t.loc.y(),line.a,line.b,line.c);
+
+    this->findIntercets(line);
+
 }
-
-//    Line line = this->getLine(p,this->loc);    // Get line between the two points
-////    printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",p.x(),p.y(),this->loc.x(),this->loc.y(),line.a,line.b,line.c);
-//    line = this->getPerpendic(line,mid);        // Calculate perpendicular line at mid point
-
-////    printf("PLine from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",p.x(),p.y(),this->loc.x(),this->loc.y(),line.a,line.b,line.c);
-
-//    int intersCount = 0;
-//    Point* s = new Point[2];
-//    int n = this->cell.n;
-
-//    // Find intersections
-//    for (int i =0;i<this->cell.n-1;i++) {
-//        Line cellLine = this->getLine(this->cell.verts[i], this->cell.verts[i+1]);
-////        printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->cell.verts[i].loc.x(),this->cell.verts[i].loc.y(),this->cell.verts[i+1].loc.x(),this->cell.verts[i+1].loc.y(),cellLine.a,cellLine.b,cellLine.c);
-//        s[intersCount] = this->intersect(cellLine,line);
-
-
-
-//        if (s[intersCount].x() !=NAN && s[intersCount].y() != NAN ){
-//            if (s[intersCount].x() !=-NAN && s[intersCount].y() != -NAN ){
-//                if (s[intersCount].x() >=0 && s[intersCount].y() >=0) {
-//                    printf("intersect X: %g Y:%g\n",s[intersCount].x(),s[intersCount].y());
-//                    intersCount++;
-//                }
-//            }
-//        }
-//        if (intersCount==2){break;}
-//    }
-
-//    if (intersCount<2){
-//    // Test last case
-//        Line cellLine = this->getLine(this->cell.verts[0], this->cell.verts[n-1]);
-//        printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->cell.verts[0].x(),this->cell.verts[0].y(),this->cell.verts[n-1].x(),this->cell.verts[n-1].y(),cellLine.a,cellLine.b,cellLine.c);
-//        s[intersCount] = this->intersect(cellLine,line);
-//        printf("intersect X: %g Y:%g\n",s[intersCount].x(),s[intersCount].y());
-//    }
-
-//    // Update cell
-
-//}
 
 void Server::send_msg(Server t, Point p){       // enqueue the next point to be evaluated
     t.que.push(p);
@@ -94,6 +65,44 @@ void Server::updateCell(Point a) {
     this->cell.n++;
 }
 
+Point* Server::findIntercets(Line line) {
+    int i = 0;
+    Line cellLine;
+    Vertex* pointer = this->cell.origin;
+    Point* tp = new Point[2];
+
+    while(pointer->nxt != NULL){
+        cellLine = this->getLine(pointer->loc,pointer->nxt->loc);       // Get line segment of polygon
+        tp[i] = this->intersect(line, cellLine);
+        if (this->pointInPolygon(tp[i])) {
+            printf("Interc (%g,%g) \n", tp[i].x(), tp[i].y());
+            i++;
+        }
+        pointer = pointer->nxt;
+    }
+
+    if (i<2) {
+        // Test last cell line segment
+        cellLine = this->getLine(pointer->loc,this->cell.origin->loc);       // Get line segment of polygon
+        tp[i] = this->intersect(line, cellLine);
+        printf("Interc (%g,%g)\n", tp[i].x(), tp[i].y());
+    }
+    return tp;
+}
+
+Point* Server::vertsToArray() {
+    int i =0;
+    Point *arr = new Point[this->cell.n];       // create new pointer of array, memalloc with new
+    Vertex* pointer = this->cell.origin;
+
+    while (pointer != NULL) {
+        arr[i] = pointer->loc;
+        pointer = pointer->nxt;
+        i++;
+    }
+    return arr;
+}
+
 
 /****************************************
  *  Geometry functions
@@ -103,9 +112,9 @@ void Server::updateCell(Point a) {
 Point Server::mid(Point a, Point b) {
     return Point((a.x() + b.x()) / 2.0,
                  (a.y() + b.y()) / 2.0);
-
 }
 
+// Returns true if the point is left or on a ccw line
 bool Server::isLeftOrOn(Point a, Point b, Point c) {
     return ((b.x() - a.x())*(c.y() - a.y()) - (b.y() - a.y())*(c.x() - a.x())) >= 0;
 }
@@ -154,14 +163,12 @@ Point Server::intersect(Line line1, Line line2) {
         x = NAN;
         y = NAN;
     }else{                              // Calculate intersection point
-        x = (line2.b*line1.c - line1.b*line2.c)/det;
-        y = (line1.a*line2.c - line2.a*line1.c)/det;
+        y = (line2.b*line1.c - line1.b*line2.c)/det;
+        x = (line1.a*line2.c - line2.a*line1.c)/det;
     }
 
     return Point(x,y);
 }
-
-
 
 //  Globals which should be set before calling this function:
 //
@@ -209,15 +216,3 @@ bool Server::pointInPolygon(Point p) {
     return oddNodes;
 }
 
-Point* Server::vertsToArray() {
-    int i =0;
-    Point *arr = new Point[this->cell.n];
-    Vertex* pointer = this->cell.origin;
-
-    while (pointer != NULL) {
-        arr[i] = pointer->loc;
-        pointer = pointer->nxt;
-        i++;
-    }
-    return arr;
-}
