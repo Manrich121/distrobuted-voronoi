@@ -11,18 +11,19 @@ Server::Server(double x, double y)
     cell.n =0;
 }
 
-//void Server::refine(Point p) {
-//// Redefine take a new point to be evaluated and calculates the new Cell
-//    Point mid = this->mid(this->loc, p);        // Calulate midpoint
+void Server::refine(Point p) {
+// Redefine take a new point to be evaluated and calculates the new Cell
+    Point mid = this->mid(this->loc, p);        // Calulate midpoint
 
-//    printf("Mid X: %g Y:%g\n",mid.x(),mid.y());
+    printf("Mid X: %g Y:%g\n",mid.x(),mid.y());
 
-//    if (this->pointInPolygon(mid)){
-//        // Test insidePolygon()
-//        printf("Inside polygon? YES\n");
-//    }else{
-//         printf("Inside polygon? NO\n");
-//    }
+    if (this->pointInPolygon(mid)){
+        // Test insidePolygon()
+        printf("Inside polygon? YES\n");
+    }else{
+         printf("Inside polygon? NO\n");
+    }
+}
 
 //    Line line = this->getLine(p,this->loc);    // Get line between the two points
 ////    printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",p.x(),p.y(),this->loc.x(),this->loc.y(),line.a,line.b,line.c);
@@ -88,8 +89,7 @@ void Server::updateCell(Point a) {
         while (pointer->nxt != NULL) {           // Loop till end of list
             pointer = pointer->nxt;
         }
-        pointer->nxt = vNode;
-
+        pointer->nxt = vNode;                   // Add new vertex
     }
     this->cell.n++;
 }
@@ -188,6 +188,7 @@ bool Server::pointInPolygon(Point p) {
     float polyXi, polyXj;
     int i, j = polySides-1;
     bool oddNodes = false;
+
     Point* verts = vertsToArray();
 
     for (i=0; i<polySides; i++) {
@@ -210,11 +211,13 @@ bool Server::pointInPolygon(Point p) {
 
 Point* Server::vertsToArray() {
     int i =0;
-    Point* arr = new Point[this->cell.n];
+    Point *arr = new Point[this->cell.n];
     Vertex* pointer = this->cell.origin;
 
     while (pointer != NULL) {
         arr[i] = pointer->loc;
+        pointer = pointer->nxt;
+        i++;
     }
     return arr;
 }

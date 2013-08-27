@@ -73,9 +73,18 @@ void VoroWindow::setup() {
     servers[sCount].updateCell(Point(400,400));
     servers[sCount].updateCell(Point(0,400));
 
-    sCount++;
+    Point* verts = servers[sCount].vertsToArray();
 
+    for (int i=0; i<servers[sCount].cell.n;i++) {
+        double x= verts[i].x();
+        double y = verts[i].y();
+        printf("Verts X: %g Y:%g\n",x,y);
+    }
+
+    sCount++;
     servers[sCount] = Server(100,100);
+
+//    servers[sCount-1].refine(servers[sCount].loc);
 
 //    servers[sCount-1].refine(servers[sCount].loc);
 //    sCount++;
