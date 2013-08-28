@@ -22,7 +22,7 @@ public:
     
 private:
     Ui::VoroWindow *ui;
-    Server* servers;
+    Server* servers[5];
     int sCount;
 };
 

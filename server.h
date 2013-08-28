@@ -27,24 +27,17 @@ class Server
 public:
     Server();
     Server(double x, double y);
-    void refine(Server* t);   // calculate the new cell after intercection of the halfspace between the
+    void refine(Server *t);   // calculate the new cell after intercection of the halfspace between the
                                         // current server and new point
     void send_msg(Server t, Point p);   // Enqueues the point to the Server t's que
 //    Point third(Vertex v, Point a, Point b);    // Returns the point assosiated with v
                                                 // that is not a or b
     void updateCell(Point a);
-    void recalculateCell(Server* t, Point intersect[]);
-    Point* findIntercets(Line line);
-    Point* vertsToArray();
+    void splitCell(Server *t, Point intersect[]);
+    void findIntercets(Line line, Point tp[]);
+    void vertsToArray(Point arr[]);
 
-    // Geometry functions
-    Point mid(Point a, Point b);
-    bool isLeftOrOn(Point a, Point b, Point c);
-    double grad(Point a, Point b);
-    double recip(double m);
-    Line getLine(Point a, Point b);
-    Line getPerpendic(Line line, Point at);
-    Point intersect(Line line1, Line line2);
+    // Polygon functions
     bool pointInPolygon(Point p);
     bool ccw(Point p[], int n);
 
@@ -54,5 +47,15 @@ public:
     std::queue<Point> que;
 
 };
+
+// Geometry functions
+Point middle(Point a, Point b);
+bool isLeftOrOn(Point a, Point b, Point c);
+double grad(Point a, Point b);
+double recip(double m);
+Line getLine(Point a, Point b);
+Line getPerpendic(Line line, Point at);
+Point intersect(Line line1, Line line2);
+
 
 #endif // SERVER_H

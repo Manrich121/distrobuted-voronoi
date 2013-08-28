@@ -4,7 +4,6 @@
 
 VoroWindow::VoroWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::VoroWindow)
 {
-    servers = new Server[5];
     sCount = 0;
 
     ui->setupUi(this);
@@ -20,7 +19,6 @@ VoroWindow::~VoroWindow()
 
 void VoroWindow::paintEvent(QPaintEvent*) {
     int n;
-    int j = 0;
     Vertex* pointer;
 
     QPainter painter(this);
@@ -30,24 +28,29 @@ void VoroWindow::paintEvent(QPaintEvent*) {
     pen.setColor(Qt::blue);
     painter.setPen(pen);
 
-    QPointF points[sCount];
-    for (int i=0;i<sCount;i++) {
-        n = servers[i].cell.n;
-        points[i] = pointToQp(servers[i].loc);
+    QPoint points[sCount];
+
+
+    for (int i=0;i<sCount;i++) {    //loop over servers
+
+        n = servers[i]->cell.n;
+        Point vpoints[n];
+        QPoint polyPoints[n];
+        points[i] = pointToQp(servers[i]->loc);
 
         // Draw current server cell
-        QPoint polyPoints[n];
+        servers[i]->vertsToArray(vpoints);
 
-        pointer = servers[i].cell.origin;
+        pointer = servers[i]->cell.origin;
         if (pointer != NULL) {
-            while (pointer != NULL) {
+            for (int j=0;j<n;j++) {
+                polyPoints[j] = this->pointToQp(vpoints[j]);
 
-                polyPoints[j] = pointToQp(pointer->loc);
-                pointer = pointer->nxt;
-                j++;
 
+                printf("Server %d: (%g,%g)\n",i,vpoints[j].x(),vpoints[j].y());
             }
-            painter.drawPolygon(polyPoints,4);
+            painter.drawPolygon(polyPoints,n);
+            printf("\n");
         }
     }
 
@@ -66,24 +69,22 @@ QPoint VoroWindow::pointToQp(Point p) {
 
 void VoroWindow::setup() {
     // Insert first server
-    servers[sCount] = Server(150,150);
-    servers[sCount].cell.origin = NULL;
+    servers[sCount] = new Server(150,150);
 
     // Construct cell ccw and assign cell to 1st server
-    servers[sCount].updateCell(Point(0,0));
-    servers[sCount].updateCell(Point(400,0));
-    servers[sCount].updateCell(Point(400,400));
-    servers[sCount].updateCell(Point(0,400));
-
+    servers[sCount]->updateCell(Point(0,0));
+    servers[sCount]->updateCell(Point(400,0));
+    servers[sCount]->updateCell(Point(400,400));
+    servers[sCount]->updateCell(Point(0,400));
+    sCount++;
 //    Point* verts = servers[sCount].vertsToArray();
 
 //    bool ccw = servers[sCount].ccw(verts, 4);
 //    printf("CCW? %d\n",ccw);
 
-    sCount++;
-    servers[sCount] = Server(100,100);
 
-    servers[sCount-1].refine(&servers[sCount]);
+    servers[sCount] = new Server(100,100);
+    servers[sCount-1]->refine(servers[sCount]);
     sCount++;
 
 //    servers[sCount-1].refine(servers[sCount].loc);
