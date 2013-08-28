@@ -47,10 +47,9 @@ void VoroWindow::paintEvent(QPaintEvent*) {
                 polyPoints[j] = this->pointToQp(vpoints[j]);
 
 
-                printf("Server %d: (%g,%g)\n",i,vpoints[j].x(),vpoints[j].y());
+//                printf("Server %d: (%g,%g)\n",i,vpoints[j].x(),vpoints[j].y());
             }
             painter.drawPolygon(polyPoints,n);
-            printf("\n");
         }
     }
 
@@ -83,9 +82,20 @@ void VoroWindow::setup() {
 //    printf("CCW? %d\n",ccw);
 
 
-    servers[sCount] = new Server(100,100);
+    servers[sCount] = new Server(100, 100);
     servers[sCount-1]->refine(servers[sCount]);
     sCount++;
+
+    servers[sCount] = new Server(250,200);
+    for (int i=0;i<sCount-1;i++) {
+        servers[i]->refine(servers[sCount]);
+    }
+    sCount++;
+
+
+
+
+
 
 //    servers[sCount-1].refine(servers[sCount].loc);
 //    sCount++;

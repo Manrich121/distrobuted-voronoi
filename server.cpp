@@ -24,6 +24,7 @@ void Server::refine(Server* t) {
         printf("Inside polygon? YES\n");
     }else{
          printf("Inside polygon? NO\n");
+         return;
     }
 
     Line line = getLine(this->loc, t->loc);
@@ -72,14 +73,14 @@ void Server::splitCell(Server* t, Point intersect[]) {
     Vertex* pointer = oldCell.origin;
     bool swapped = false;
     // Determine if s i left of intersect-line
-    bool isLeft = isLeftOrOn(this->loc, intersect[0], intersect[1]);
+    bool Left = isLeft(this->loc, intersect[0], intersect[1]);
 
     // Clear s.cell
     this->cell.n=0;
     this->cell.origin = NULL;
 
     // insert the intersects head first
-    if (isLeft) {
+    if (Left) {
         t->updateCell(intersect[1]);
         t->updateCell(intersect[0]);
     }else{
@@ -89,7 +90,7 @@ void Server::splitCell(Server* t, Point intersect[]) {
 
     while (pointer != NULL) {
         // Test if the current point is on same side as s
-        if (isLeft == isLeftOrOn(pointer->loc, intersect[0], intersect[1])) {
+        if (Left == isLeft(pointer->loc, intersect[0], intersect[1])) {
             this->updateCell(pointer->loc);
 
 //            printf("New s vertex (%g,%g)\n",pointer->loc.x(),pointer->loc.y());
@@ -97,8 +98,13 @@ void Server::splitCell(Server* t, Point intersect[]) {
         }else{
             // Check to see if it will be the first swap of server
             if (!swapped) {
-                this->updateCell(intersect[1]);
-                this->updateCell(intersect[0]);
+                if (Left) {
+                    this->updateCell(intersect[0]);
+                    this->updateCell(intersect[1]);
+                }else{
+                    this->updateCell(intersect[1]);
+                    this->updateCell(intersect[0]);
+                }
                 swapped = true;
             }
             t->updateCell(pointer->loc);
@@ -112,12 +118,15 @@ void Server::splitCell(Server* t, Point intersect[]) {
 void Server::findIntercets(Line line, Point tp[]) {
     int i = 0;
     Line cellLine;
-    Vertex* pointer = this->cell.origin;
+    Vertex* pointer = this->cell.origin;    
 
     while(pointer->nxt != NULL){
         cellLine = getLine(pointer->loc,pointer->nxt->loc);       // Get line segment of polygon
+
+//        get_line_intersection(pointer->loc, pointer->nxt->loc, p0, p1,&tp[i]);
+//        printf("Interc (%g,%g) \n", tp[i].x(), tp[i].y());
         tp[i] = intersect(line, cellLine);
-        if (this->pointInPolygon(tp[i])) {
+        if (collinear(pointer->loc, tp[i], pointer->nxt->loc)) {
             printf("Interc (%g,%g) \n", tp[i].x(), tp[i].y());
             i++;
         }
@@ -128,7 +137,7 @@ void Server::findIntercets(Line line, Point tp[]) {
         // Test last cell line segment
         cellLine = getLine(pointer->loc,this->cell.origin->loc);       // Get line segment of polygon
         tp[i] = intersect(line, cellLine);
-        printf("Interc (%g,%g)\n", tp[i].x(), tp[i].y());
+        printf("Last Interc (%g,%g)\n", tp[i].x(), tp[i].y());
     }
 }
 
@@ -178,10 +187,15 @@ bool Server::pointInPolygon(Point p) {
         polyYj = verts[j].y();
         polyXj = verts[j].x();
 
-        if (((polyYi<= y && polyYj>=y) ||   (polyYj<= y && polyYi>=y)) &&  (polyXi<=x || polyXj<=x)) {
-            if (polyXi+(y-polyYi)/(polyYj-polyYi)*(polyXj-polyXi)<=x) {
-                oddNodes=!oddNodes;
-            }
+//        if (((polyYi<= y && polyYj>=y) ||   (polyYj<= y && polyYi>=y)) &&  (polyXi<=x || polyXj<=x)) {
+//            if (polyXi+(y-polyYi)/(polyYj-polyYi)*(polyXj-polyXi)<=x) {
+//                oddNodes=!oddNodes;
+//            }
+//        }
+
+        if ( ((polyYi>y) != (polyYj>y)) &&
+             (x < (polyXj-polyXi) * (y-polyYi) / (polyYj-polyYi) + polyXi) ) {
+            oddNodes =! oddNodes;
         }
 
         j=i;
@@ -214,9 +228,24 @@ Point middle(Point a, Point b) {
 }
 
 // Returns true if the point is left or on a ccw line
-bool isLeftOrOn(Point a, Point b, Point c) {
-    return ((b.x() - a.x())*(c.y() - a.y()) - (b.y() - a.y())*(c.x() - a.x())) >= 0;
+bool isLeft(Point a, Point b, Point c) {
+    return ((b.x() - a.x())*(c.y() - a.y()) - (b.y() - a.y())*(c.x() - a.x())) > 0;
 }
+
+bool isOnLine(Point p, Line line) {
+    return (p.y() == (line.c-line.b*p.x()));
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Returns whether 3 points are collinear and in order a->b->c
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+bool collinear(Point a, Point b, Point c) {
+    if ((a.y() - b.y()) * (a.x() - c.x()) == (a.y() - c.y()) * (a.x() - b.x())) {
+        return (a.dist(b) <= a.dist(c) && c.dist(b) <= c.dist(a));
+    }
+    return false;
+}
+
 
 // Calculates and return the gradient between two points
 double grad(Point a, Point b) {
@@ -274,5 +303,32 @@ Point intersect(Line line1, Line line2) {
     }
 
     return Point(x,y);
+}
+
+
+bool get_line_intersection(Point p0, Point p1, Point p2, Point p3, Point* inter) {
+        //float p0_x, float p0_y, float p1_x, float p1_y,
+    //float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y)
+
+    float s1_x, s1_y, s2_x, s2_y;
+    s1_x = p1.x() - p0.x();
+    s1_y = p1.y() - p0.y();
+    s2_x = p3.x() - p2.x();
+    s2_y = p3.y() - p2.y();
+
+    float s, t;
+    s = (-s1_y * (p0.x() - p2.x()) + s1_x * (p0.y() - p2.y())) / (-s2_x * s1_y + s1_x * s2_y);
+    t = ( s2_x * (p0.y() - p2.y()) - s2_y * (p0.x() - p2.x())) / (-s2_x * s1_y + s1_x * s2_y);
+
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+    {
+        // Collision detected
+        if (inter != NULL)
+            inter->setX(p0.x() + (t * s1_x));
+            inter->setY(p0.y() + (t * s1_y));
+        return true;
+    }
+
+    return false; // No collision
 }
 

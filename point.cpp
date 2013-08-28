@@ -1,11 +1,22 @@
 #include "point.h"
 
-Point::Point(){}
+Point::Point(){
+}
 
 Point::Point(double x = 0.0, double y = 0.0) {
-        xval = x;
-        yval = y;
+    xval = x;
+    yval = y;
 }
+
+// Setters
+
+void Point::setX(double x) {
+    xval = x;
+}
+void Point::setY(double y) {
+    yval = y;
+}
+
 // Extractors
 double Point::x() { return xval; }
 double Point::y() { return yval; }
