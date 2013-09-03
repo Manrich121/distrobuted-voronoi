@@ -82,15 +82,15 @@ void VoroWindow::setup() {
 //    printf("CCW? %d\n",ccw);
 
 
-    servers[sCount] = new Server(100, 100);
+    servers[sCount] = new Server(100, 160);
     servers[sCount-1]->refine(servers[sCount]);
     sCount++;
 
-    servers[sCount] = new Server(250,200);
-    for (int i=0;i<sCount-1;i++) {
-        servers[i]->refine(servers[sCount]);
-    }
-    sCount++;
+//    servers[sCount] = new Server(100,300);
+//    for (int i=0;i<sCount-1;i++) {
+//        servers[i]->refine(servers[sCount]);
+//    }
+//    sCount++;
 
 
 

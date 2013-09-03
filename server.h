@@ -2,8 +2,6 @@
 #define SERVER_H
 
 #include "point.h"
-#include <queue>            // std::queue
-
 
 class Vertex {
 public:
@@ -29,9 +27,6 @@ public:
     Server(double x, double y);
     void refine(Server *t);   // calculate the new cell after intercection of the halfspace between the
                                         // current server and new point
-    void send_msg(Server t, Point p);   // Enqueues the point to the Server t's que
-//    Point third(Vertex v, Point a, Point b);    // Returns the point assosiated with v
-                                                // that is not a or b
     void updateCell(Point a);
     void splitCell(Server *t, Point intersect[]);
     void findIntercets(Line line, Point tp[]);
@@ -44,8 +39,6 @@ public:
 // Params
     Point loc;
     Cell cell;
-    std::queue<Point> que;
-
 };
 
 // Geometry functions

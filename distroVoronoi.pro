@@ -15,10 +15,14 @@ TEMPLATE = app
 SOURCES += main.cpp\
         vorowindow.cpp \
     server.cpp \
-    point.cpp
+    point.cpp \
+    quadwindow.cpp
 
 HEADERS  += vorowindow.h \
     server.h \
-    point.h
+    point.h \
+    quadwindow.h
 
-FORMS    += vorowindow.ui
+FORMS    += vorowindow.ui \
+    qwindow.ui \
+    quadwindow.ui
