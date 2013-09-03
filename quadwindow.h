@@ -2,6 +2,8 @@
 #define QUADWINDOW_H
 
 #include <QMainWindow>
+#include <QtGui>
+#include "server.h"
 
 namespace Ui {
 class QuadWindow;
@@ -14,9 +16,15 @@ class QuadWindow : public QMainWindow
 public:
     explicit QuadWindow(QWidget *parent = 0);
     ~QuadWindow();
+    void paintEvent(QPaintEvent*);
+    QPoint pointToQp(Point p);
+    void setup();
     
 private:
     Ui::QuadWindow *ui;
+    Server* servers[5];
+    int sCount;
+    QColor* c[5];
 };
 
 #endif // QUADWINDOW_H

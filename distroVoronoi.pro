@@ -24,5 +24,4 @@ HEADERS  += vorowindow.h \
     quadwindow.h
 
 FORMS    += vorowindow.ui \
-    qwindow.ui \
     quadwindow.ui

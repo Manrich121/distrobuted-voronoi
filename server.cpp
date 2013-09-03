@@ -12,6 +12,10 @@ Server::Server(double x, double y)
     cell.origin = NULL;
 }
 
+/************************************
+ *  Distibuted Voronoi
+ ***********************************/
+
 void Server::refine(Server* t) {
 // Redefine take a new point to be evaluated and calculates the new Cell
     Point mid = middle(this->loc, t->loc);        // Calulate midpoint
@@ -37,19 +41,6 @@ void Server::refine(Server* t) {
     this->findIntercets(line,intersects);
     this->splitCell(t, intersects);
 }
-
-void Server::send_msg(Server t, Point p){       // enqueue the next point to be evaluated
-    t.que.push(p);
-}
-
-//Point Server::third(Vertex v, Point a, Point b) {
-//    for (int i=0; i < 3; i++) {
-//        if (!v.points[i].equal(a) && !v.points[i].equal(b)) {
-//            return v.points[i];
-//        }
-//    }
-//    return Point();
-//}
 
 // Addes the two new  Vertexes
 void Server::updateCell(Point a) {
@@ -187,12 +178,6 @@ bool Server::pointInPolygon(Point p) {
         polyYj = verts[j].y();
         polyXj = verts[j].x();
 
-//        if (((polyYi<= y && polyYj>=y) ||   (polyYj<= y && polyYi>=y)) &&  (polyXi<=x || polyXj<=x)) {
-//            if (polyXi+(y-polyYi)/(polyYj-polyYi)*(polyXj-polyXi)<=x) {
-//                oddNodes=!oddNodes;
-//            }
-//        }
-
         if ( ((polyYi>y) != (polyYj>y)) &&
              (x < (polyXj-polyXi) * (y-polyYi) / (polyYj-polyYi) + polyXi) ) {
             oddNodes =! oddNodes;
@@ -217,6 +202,68 @@ bool Server::ccw(Point p[], int n) {
     return sum <=0;
 }
 
+/***************************************
+ *  QuadTree
+ **************************************/
+Server::Server(double x, double y, Point p1, Point p2) {
+    loc = Point(x,y);
+    cell.n = 0;
+    cell.rect[cell.n++] = p1;
+    cell.rect[cell.n++] = p2;
+}
+
+void Server::addRect(Point p1, Point p2) {
+    double tempx;
+    double tempy;
+    if (cell.n + 2 > 8) {
+        cell.n = 0;
+    }
+
+    if (p1.x() > p2.x()) {
+        tempx = p1.x();
+        p1.setX(p2.x());
+        p2.setX(tempx);
+    }
+    if (p1.y() > p2.y()) {
+        tempy = p2.y();
+        p2.setY(p1.y());
+        p1.setY(tempy);
+    }
+
+    cell.rect[cell.n++] = p1;
+    cell.rect[cell.n++] = p2;
+}
+
+void Server::devide() {
+    // Get Rect
+    Point p1 = cell.rect[0];
+    Point p2 = cell.rect[1];
+    this->cell.n = 0;
+
+    // Devide into four rects and add to this.cell
+    Point p3 = Point(p2.x(), p1.y());
+    Point p4 = Point(p1.x(), p2.y());
+    Point p5 = Point((p2.x() + p1.x())/2,(p2.y() + p1.y())/2);
+
+    this->addRect(p1,p5);
+    this->addRect(p5,p3);
+    this->addRect(p5,p2);
+    this->addRect(p4,p5);
+
+    this->loc = Point((p5.x()+p1.x())/2, (p5.y()+p1.y())/2);
+
+}
+
+void Server::transfer(Server *t) {
+    if (this->cell.n -2 <= 0) {
+        this->devide();
+    }
+    Point p1 = this->cell.rect[--this->cell.n];
+    Point p2 = this->cell.rect[--this->cell.n];
+    t->addRect(p1,p2);
+}
+
+
 /****************************************
  *  Geometry functions
  ****************************************/
@@ -236,16 +283,13 @@ bool isOnLine(Point p, Line line) {
     return (p.y() == (line.c-line.b*p.x()));
 }
 
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Returns whether 3 points are collinear and in order a->b->c
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 bool collinear(Point a, Point b, Point c) {
     if ((a.y() - b.y()) * (a.x() - c.x()) == (a.y() - c.y()) * (a.x() - b.x())) {
         return (a.dist(b) <= a.dist(c) && c.dist(b) <= c.dist(a));
     }
     return false;
 }
-
 
 // Calculates and return the gradient between two points
 double grad(Point a, Point b) {

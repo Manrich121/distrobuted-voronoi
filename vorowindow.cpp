@@ -66,6 +66,8 @@ QPoint VoroWindow::pointToQp(Point p) {
     return QPoint(p.x(), 400-p.y());
 }
 
+
+
 void VoroWindow::setup() {
     // Insert first server
     servers[sCount] = new Server(150,150);
