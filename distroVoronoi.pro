@@ -16,12 +16,14 @@ SOURCES += main.cpp\
         vorowindow.cpp \
     server.cpp \
     point.cpp \
-    quadwindow.cpp
+    quadwindow.cpp \
+    client.cpp
 
 HEADERS  += vorowindow.h \
     server.h \
     point.h \
-    quadwindow.h
+    quadwindow.h \
+    client.h
 
 FORMS    += vorowindow.ui \
     quadwindow.ui

@@ -260,6 +260,7 @@ void Server::transfer(Server *t) {
     }
     Point p1 = this->cell.rect[--this->cell.n];
     Point p2 = this->cell.rect[--this->cell.n];
+    t->loc = Point((p1.x()+p2.x())/2, (p1.y()+p2.y())/2);
     t->addRect(p1,p2);
 }
 

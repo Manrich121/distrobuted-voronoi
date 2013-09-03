@@ -6,6 +6,9 @@ QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWind
     sCount = 0;
     c[0] = new QColor(Qt::red);
     c[1] = new QColor(Qt::blue);
+    c[2] = new QColor(Qt::black);
+    c[3] = new QColor(Qt::yellow);
+    c[4] = new QColor(Qt::green);
     ui->setupUi(this);
     setup();
     update();
@@ -56,9 +59,13 @@ void QuadWindow::setup() {
     servers[sCount]->devide();
     sCount++;
 
-    servers[sCount] = new Server(100,300);
+    servers[sCount] = new Server();
     servers[sCount-1]->transfer(servers[sCount]);
     servers[sCount]->devide();
+    sCount++;
+
+    servers[sCount] = new Server();
+    servers[sCount-2]->transfer(servers[sCount]);
     sCount++;
 
 }
