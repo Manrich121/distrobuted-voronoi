@@ -8,7 +8,12 @@ QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWind
     c[1] = new QColor(Qt::blue);
     c[2] = new QColor(Qt::black);
     c[3] = new QColor(Qt::yellow);
-    c[4] = new QColor(Qt::green);
+    c[4] = new QColor(Qt::cyan);
+    c[5] = new QColor(Qt::lightGray);
+    c[6] = new QColor(Qt::darkMagenta);
+    c[7] = new QColor(Qt::darkYellow);
+    c[8] = new QColor(Qt::darkRed);
+    c[9] = new QColor(Qt::magenta);
     ui->setupUi(this);
     setup();
     update();
@@ -33,9 +38,9 @@ void QuadWindow::paintEvent(QPaintEvent*) {
 
         painter.drawPoint(pointToQp(servers[i]->loc));
         n = servers[i]->cell.n;
-        for (int j=0;j<n;j+=2) {
-            QPoint p1 = pointToQp(servers[i]->cell.rect[j]);
-            QPoint p2 = pointToQp(servers[i]->cell.rect[j+1]);
+        for (int j=0;j<n;j++) {
+            QPoint p1 = pointToQp(servers[i]->cell.rect[j]->topLeft);
+            QPoint p2 = pointToQp(servers[i]->cell.rect[j]->botRight);
 
             pen.setWidth(2);
             painter.setPen(pen);
@@ -56,16 +61,17 @@ QPoint QuadWindow::pointToQp(Point p) {
 
 void QuadWindow::setup() {
     servers[sCount] = new Server(200,200, Point(0,0), Point(400,400));
-    servers[sCount]->devide();
+    sCount++;
+
+//    bool in = servers[sCount-1]->insideArea(Point(100,200));
+//    printf("Inside %d",in);
+
+    servers[sCount] = new Server();
+    servers[sCount-1]->transfer(servers[sCount]);
     sCount++;
 
     servers[sCount] = new Server();
     servers[sCount-1]->transfer(servers[sCount]);
-    servers[sCount]->devide();
-    sCount++;
-
-    servers[sCount] = new Server();
-    servers[sCount-2]->transfer(servers[sCount]);
     sCount++;
 
 }

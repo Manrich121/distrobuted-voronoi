@@ -22,9 +22,9 @@ public:
     
 private:
     Ui::QuadWindow *ui;
-    Server* servers[5];
+    Server* servers[10];
     int sCount;
-    QColor* c[5];
+    QColor* c[10];
 };
 
 #endif // QUADWINDOW_H

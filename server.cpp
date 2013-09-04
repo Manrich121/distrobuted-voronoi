@@ -3,11 +3,14 @@
 #include "point.h"
 
 Server::Server(){
+    lvl = 0;
+    cell.n = 0;
 }
 
 Server::Server(double x, double y)
 {
     loc = Point(x,y);
+    lvl = 0;
     cell.n = 0;
     cell.origin = NULL;
 }
@@ -202,20 +205,28 @@ bool Server::ccw(Point p[], int n) {
     return sum <=0;
 }
 
+bool inRect(Point tp, Rectangle* r) {
+    if (tp.x() >= r->topLeft.x() && tp.x() <= r->botRight.x()) {
+        if (tp.y() >= r->topLeft.y() && tp.y() <= r->botRight.y()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /***************************************
  *  QuadTree
  **************************************/
 Server::Server(double x, double y, Point p1, Point p2) {
     loc = Point(x,y);
     cell.n = 0;
-    cell.rect[cell.n++] = p1;
-    cell.rect[cell.n++] = p2;
+    this->addRect(p1,p2);
 }
 
 void Server::addRect(Point p1, Point p2) {
     double tempx;
     double tempy;
-    if (cell.n + 2 > 8) {
+    if (cell.n + 1 > 4) {
         cell.n = 0;
     }
 
@@ -230,14 +241,13 @@ void Server::addRect(Point p1, Point p2) {
         p1.setY(tempy);
     }
 
-    cell.rect[cell.n++] = p1;
-    cell.rect[cell.n++] = p2;
+    this->cell.rect[cell.n++] = new Rectangle(p1,p2);
 }
 
 void Server::devide() {
     // Get Rect
-    Point p1 = cell.rect[0];
-    Point p2 = cell.rect[1];
+    Point p1 = cell.rect[0]->topLeft;
+    Point p2 = cell.rect[0]->botRight;
     this->cell.n = 0;
 
     // Devide into four rects and add to this.cell
@@ -255,15 +265,27 @@ void Server::devide() {
 }
 
 void Server::transfer(Server *t) {
-    if (this->cell.n -2 <= 0) {
+    if (this->cell.n -1 <= 0) {
         this->devide();
     }
-    Point p1 = this->cell.rect[--this->cell.n];
-    Point p2 = this->cell.rect[--this->cell.n];
+    int n = --this->cell.n;
+    Point p1 = this->cell.rect[n]->topLeft;
+    Point p2 = this->cell.rect[n]->botRight;
     t->loc = Point((p1.x()+p2.x())/2, (p1.y()+p2.y())/2);
     t->addRect(p1,p2);
+
+    this->neighbor.insert(t);
 }
 
+bool Server::insideArea(Point tp) {
+    for (int i = 0; i < this->cell.n;i++){
+        if (inRect(tp,this->cell.rect[i])) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 /****************************************
  *  Geometry functions

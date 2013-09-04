@@ -3,6 +3,7 @@
 
 #include <set>
 #include "point.h"
+#include "client.h"
 
 /*****************************************************************************
  *  Server class contains methods used in both the distributed Voronoi
@@ -18,10 +19,8 @@
  *      - Vertex* origin => Pointer to first Vertex defining a polygon
  *
  *      QuadTree:
- *      - int n => The index of Rectangles owned by the current server (#Rects = n/2)
- *      - rect[8] => a Point array, size 8 containing sets of two Points, each
- *                  defining a rectangle. (Max of four Rectangles)
- *                  ie. rec[0:1], rec[2:3], rec[4:5], rec[6:7]
+ *      - int n => The index of Rectangles owned by the current server
+ *      - rect[4] => array of rectangle structs
  *  - neighbor => stdlib set of neighbours of the current server
  ******************************************************************************/
 
@@ -36,10 +35,21 @@ public:
     Vertex* nxt;            // Pointer to next vertex in polygon
 };
 
+class Rectangle {
+public:
+    Rectangle(Point tL, Point bR) {
+        topLeft = tL;
+        botRight = bR;
+    }
+
+    Point topLeft;
+    Point botRight;
+};
+
 struct Cell {
     int n;
     Vertex* origin;         // pointer to origin of polygon Assume counter clockwise sequence
-    Point rect[8];           // Sets of two points each defining a rectangle
+    Rectangle* rect[4];           // Sets of two points each defining a rectangle
 };
 
 class Server
@@ -69,12 +79,19 @@ public:
     void addRect(Point p1, Point p2);
     void devide();            // Devide current rectangle into four and move location to top left rect
     void transfer(Server* t); // Transfer one of the current server's most loaded rectangles to t
+    bool insideArea(Point tp);
 
 // Params
     Point loc;
+    int lvl;
     Cell cell;
     std::set<Server*> neighbor;
+
+    Client* myClients[];
+    int maxClients;
 };
+
+bool inRect(Point tp, Rectangle r);
 
 // Geometry functions
 Point middle(Point a, Point b);
