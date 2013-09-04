@@ -195,7 +195,7 @@ bool Server::pointInPolygon(Point p) {
 // Takes an array of atleast 3 points and returns if they are ccw
 // **Ref: Stackoverflow, Beta: Math - How to determine if a list of polygon points are in clockwise order?
 // http://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
-bool Server::ccw(Point p[], int n) {
+bool ccw(Point p[], int n) {
     double sum = 0;
 
     // Sum over (x2-x1)(y2+y1)
@@ -220,6 +220,7 @@ bool inRect(Point tp, Rectangle* r) {
 Server::Server(double x, double y, Point p1, Point p2) {
     loc = Point(x,y);
     cell.n = 0;
+    lvl = 0;
     this->addRect(p1,p2);
 }
 
@@ -244,37 +245,68 @@ void Server::addRect(Point p1, Point p2) {
     this->cell.rect[cell.n++] = new Rectangle(p1,p2);
 }
 
-void Server::devide() {
-    // Get Rect
-    Point p1 = cell.rect[0]->topLeft;
-    Point p2 = cell.rect[0]->botRight;
-    this->cell.n = 0;
+/*
+ *  Devide the current rectangle into four and return if true if successful.
+ *  |  1  |  2  |
+ *  -------------
+ *  |  4  |  3  |
+ *
+ *  Can only devide upto level 2.
+ */
 
-    // Devide into four rects and add to this.cell
-    Point p3 = Point(p2.x(), p1.y());
-    Point p4 = Point(p1.x(), p2.y());
-    Point p5 = Point((p2.x() + p1.x())/2,(p2.y() + p1.y())/2);
+bool Server::devide() {
 
-    this->addRect(p1,p5);
-    this->addRect(p5,p3);
-    this->addRect(p5,p2);
-    this->addRect(p4,p5);
+    if (this->lvl < 2) {
+        // Get Rect
+        Point p1 = cell.rect[0]->topLeft;
+        Point p2 = cell.rect[0]->botRight;
+        this->cell.n = 0;
 
-    this->loc = Point((p5.x()+p1.x())/2, (p5.y()+p1.y())/2);
+        // Devide into four rects and add to this.cell
+        Point p3 = Point(p2.x(), p1.y());
+        Point p4 = Point(p1.x(), p2.y());
+        Point p5 = Point((p2.x() + p1.x())/2,(p2.y() + p1.y())/2);
 
+        this->addRect(p1,p5);
+        this->addRect(p5,p3);
+        this->addRect(p5,p2);
+        this->addRect(p4,p5);
+
+        this->loc = Point((p5.x()+p1.x())/2, (p5.y()+p1.y())/2);
+        this->lvl++;
+        return true;
+    }
+    return false;
 }
 
-void Server::transfer(Server *t) {
+/*
+ *  Transfers the last owned Rectangle to t, returns true is successful.
+ */
+
+bool Server::transfer(Server *t) {
     if (this->cell.n -1 <= 0) {
-        this->devide();
+        bool success = this->devide();
+        if (!success) {
+            return false;
+        }
     }
     int n = --this->cell.n;
     Point p1 = this->cell.rect[n]->topLeft;
     Point p2 = this->cell.rect[n]->botRight;
     t->loc = Point((p1.x()+p2.x())/2, (p1.y()+p2.y())/2);
+    t->lvl = this->lvl;
     t->addRect(p1,p2);
 
-    this->neighbor.insert(t);
+    t->addAdjacent(this);
+
+    // test all neighbours possible adjacent
+    set <Server*>::iterator it;
+    for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
+        if ((*it)!=t) {
+            t->addAdjacent(*it);
+        }
+    }
+    return true;
 }
 
 bool Server::insideArea(Point tp) {
@@ -283,6 +315,30 @@ bool Server::insideArea(Point tp) {
             return true;
         }
     }
-
     return false;
+}
+
+void Server::addAdjacent(Server* t) {
+    int n = t->cell.n;          // get t's number of rects
+    Rectangle* curRect;
+
+    for (int i=0; i <n;i++) {
+        curRect = t->cell.rect[i];
+        if (this->insideArea(curRect->topLeft) || this->insideArea(curRect->botRight) ||
+                this->insideArea(Point(curRect->topLeft.x(),curRect->botRight.y())) ||
+                this->insideArea(Point(curRect->botRight.x(),curRect->topLeft.y()))) {
+            this->neighbor.insert(t);
+            t->neighbor.insert(this);
+            break;
+        }
+    }
+
+}
+
+void Server::printNeighbourLocs(){
+    set <Server*>::iterator it;
+    printf("My loc (%g,%g)\n",this->loc.x(),this->loc.y());
+    for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
+        printf("N's' loc (%g,%g)\n",(*it)->loc.x(),(*it)->loc.y());
+    }
 }

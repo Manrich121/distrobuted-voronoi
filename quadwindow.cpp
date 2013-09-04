@@ -1,5 +1,6 @@
 #include "quadwindow.h"
 #include "ui_quadwindow.h"
+#include <sstream>
 
 QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWindow)
 {
@@ -27,16 +28,21 @@ QuadWindow::~QuadWindow()
 
 void QuadWindow::paintEvent(QPaintEvent*) {
     int n;
+    std::string s;
+
     QPainter painter(this);
     // Pen
     QPen pen;
     for (int i=0;i<sCount;i++) {
+        std::stringstream out;
+        out << i;
+        s = out.str();
+
 
         pen.setWidth(5);
         pen.setColor(*c[i]);
         painter.setPen(pen);
-
-        painter.drawPoint(pointToQp(servers[i]->loc));
+        painter.drawText(pointToQp(servers[i]->loc),QString(s.c_str()));
         n = servers[i]->cell.n;
         for (int j=0;j<n;j++) {
             QPoint p1 = pointToQp(servers[i]->cell.rect[j]->topLeft);
@@ -46,8 +52,6 @@ void QuadWindow::paintEvent(QPaintEvent*) {
             painter.setPen(pen);
             painter.drawRect(QRect(p1,p2));
         }
-
-
     }
 
 //    QRect r = QRect(QPoint(400,400),QPoint(0,0));
@@ -73,5 +77,18 @@ void QuadWindow::setup() {
     servers[sCount] = new Server();
     servers[sCount-1]->transfer(servers[sCount]);
     sCount++;
+
+    servers[sCount] = new Server();
+    servers[sCount-3]->transfer(servers[sCount]);
+    sCount++;
+
+    servers[sCount] = new Server();
+    servers[sCount-3]->transfer(servers[sCount]);
+    sCount++;
+
+    for(int i=0; i<sCount;i++) {
+        servers[i]->printNeighbourLocs();
+        printf("\n");
+    }
 
 }

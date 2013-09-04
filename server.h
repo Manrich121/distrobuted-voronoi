@@ -58,6 +58,8 @@ public:
     Server();
     Server(double x, double y);
 
+    void printNeighbourLocs();
+
     /**********************
      *  Distributed Voronoi
      **********************/
@@ -70,16 +72,16 @@ public:
 
     // Polygon functions
     bool pointInPolygon(Point p);
-    bool ccw(Point p[], int n);
 
     /**********************
      *  QuadTree
      **********************/
     Server(double x, double y, Point p1, Point p2);
     void addRect(Point p1, Point p2);
-    void devide();            // Devide current rectangle into four and move location to top left rect
-    void transfer(Server* t); // Transfer one of the current server's most loaded rectangles to t
-    bool insideArea(Point tp);
+    bool devide();              // Devide current rectangle into four and move location to top left rect
+    bool transfer(Server* t);   // Transfer one of the current server's most loaded rectangles to t
+    bool insideArea(Point tp);  // Determines if the test point tp is inside the area of current server
+    void addAdjacent(Server* t); // Determines if the Server t, and all its neighbours is adjacent to this, thus is a neighbour
 
 // Params
     Point loc;
@@ -91,6 +93,7 @@ public:
     int maxClients;
 };
 
+bool ccw(Point p[], int n);
 bool inRect(Point tp, Rectangle r);
 
 #endif // SERVER_H
