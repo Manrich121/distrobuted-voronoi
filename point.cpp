@@ -56,3 +56,117 @@ void Point::print(ostream &strm)
 bool Point::equal(Point p) {
     return (this->x() == p.x()) && (this->y() == p.y());
 }
+
+
+/****************************************
+ *  Geometry functions
+ ****************************************/
+
+// Returns the midpoint between two points
+Point middle(Point a, Point b) {
+    return Point((a.x() + b.x()) / 2.0,
+                 (a.y() + b.y()) / 2.0);
+}
+
+// Returns true if the point is left or on a ccw line
+bool isLeft(Point a, Point b, Point c) {
+    return ((b.x() - a.x())*(c.y() - a.y()) - (b.y() - a.y())*(c.x() - a.x())) > 0;
+}
+
+bool isOnLine(Point p, Line line) {
+    return (p.y() == (line.c-line.b*p.x()));
+}
+
+// Returns whether 3 points are collinear and in order a->b->c
+bool collinear(Point a, Point b, Point c) {
+    if ((a.y() - b.y()) * (a.x() - c.x()) == (a.y() - c.y()) * (a.x() - b.x())) {
+        return (a.dist(b) <= a.dist(c) && c.dist(b) <= c.dist(a));
+    }
+    return false;
+}
+
+// Calculates and return the gradient between two points
+double grad(Point a, Point b) {
+    return 1.0 * (a.y() - b.y()) / (a.x() - b.x());
+}
+
+// Return the reciprocal of the grad so that m1*m2=-1
+double recip(double m) {
+    return -1/m;
+}
+
+// Calculates the equation of the line between two lines
+Line getLine(Point v, Point w) {
+    Line line;
+    line.a = 1.0;                       // A is always chose as one
+    line.b = -1*grad(v,w);              // B is equal to m, the gradiant of the two lines
+    if (line.b == INFINITY || line.b == -INFINITY) {
+        line.a = 0;
+        line.b = 1;
+    }
+    line.c =  line.a*w.y() + line.b*v.x();     // C is eqaul to m(-x1) + y1
+
+    return line;
+}
+
+Line getPerpendic(Line line, Point at) {
+    Line newLine;
+    newLine.a = 1.0;                    // A is agian one
+    newLine.b = -1*recip(-1*line.b);    // Find the reciprocal of line1
+    newLine.c = at.y() + newLine.b*at.x();       // Calculate the equation through the point 'at'
+
+    return newLine;
+}
+
+// Calculate the intersection of two lines
+// A1x + B1y = C1
+// A2x + B2y = C2
+Point intersect(Line line1, Line line2) {
+    double det = line1.a*line2.b - line2.a*line1.b;     // Calculate the determinant
+    double x;
+    double y;
+    if (det == 0){                      // Lines are parallel
+        x = NAN;
+        y = NAN;
+    }else{                              // Calculate intersection point
+        y = (line2.b*line1.c - line1.b*line2.c)/det;
+        x = (line1.a*line2.c - line2.a*line1.c)/det;
+
+        if(x==0.0) {
+            x = 0.0;
+        }
+        if (y == 0.0) {
+            y = 0.0;
+        }
+    }
+
+    return Point(x,y);
+}
+
+
+bool get_line_intersection(Point p0, Point p1, Point p2, Point p3, Point* inter) {
+        //float p0_x, float p0_y, float p1_x, float p1_y,
+    //float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y)
+
+    float s1_x, s1_y, s2_x, s2_y;
+    s1_x = p1.x() - p0.x();
+    s1_y = p1.y() - p0.y();
+    s2_x = p3.x() - p2.x();
+    s2_y = p3.y() - p2.y();
+
+    float s, t;
+    s = (-s1_y * (p0.x() - p2.x()) + s1_x * (p0.y() - p2.y())) / (-s2_x * s1_y + s1_x * s2_y);
+    t = ( s2_x * (p0.y() - p2.y()) - s2_y * (p0.x() - p2.x())) / (-s2_x * s1_y + s1_x * s2_y);
+
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+    {
+        // Collision detected
+        if (inter != NULL)
+            inter->setX(p0.x() + (t * s1_x));
+            inter->setY(p0.y() + (t * s1_y));
+        return true;
+    }
+
+    return false; // No collision
+}
+

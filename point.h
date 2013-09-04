@@ -32,4 +32,16 @@ public:
     void print(ostream &strm);
 };
 
+// Geometry functions
+Point middle(Point a, Point b);
+bool isLeft(Point a, Point b, Point c);
+bool isOnLine(Point a, Line line);
+bool collinear(Point a, Point b, Point c);
+double grad(Point a, Point b);
+double recip(double m);
+Line getLine(Point a, Point b);
+Line getPerpendic(Line line, Point at);
+Point intersect(Line line1, Line line2);
+bool get_line_intersection(Point p0, Point p1, Point p2, Point p3, Point* inter);
+
 #endif // POINT_H
