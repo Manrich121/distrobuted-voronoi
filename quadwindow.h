@@ -28,9 +28,9 @@ private:
     Ui::QuadWindow *ui;
     QTimer* updateTimer;
     QTimer* clientAddTimer;
-    Server* servers[10];
+    Server* servers[16];
     int sCount;
-    QColor* c[10];
+    QColor* c[16];
 };
 
 #endif // QUADWINDOW_H

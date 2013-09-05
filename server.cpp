@@ -374,8 +374,11 @@ void Server::ownership(Client* c) {
 
 void Server::checkOwership() {
     set <Client*>::iterator it;
-    for (it = this->myClients.begin(); it != this->myClients.end(); it++) {
+    set <Client*> tmp = myClients;
+
+    for (it = tmp.begin(); it != tmp.end();) {
         this->ownership(*it);
+        ++it;
     }
 }
 
