@@ -32,8 +32,9 @@ QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWind
 
     //Update timer
     updateTimer = new QTimer();
-    updateTimer->setInterval(50);
+    updateTimer->setInterval(100);
     connect(updateTimer, SIGNAL(timeout()), this, SLOT(serverUpdate()));
+    connect(updateTimer, SIGNAL(timeout()), this, SLOT(handleAreas()));
     updateTimer->start();
 
     //client add timer
@@ -67,7 +68,11 @@ void QuadWindow::paintEvent(QPaintEvent*) {
         pen.setColor(*c[i]);
         painter.setPen(pen);
 
+        if (servers[i]->lvl == -1) {
+            continue;
+        }
         painter.drawText(pointToQp(servers[i]->loc),QString(s.c_str()));
+
         for (it = servers[i]->myClients.begin(); it != servers[i]->myClients.end(); it++) {
             painter.drawPoint(pointToQp((*it)->loc));
         }
@@ -93,8 +98,22 @@ QPoint QuadWindow::pointToQp(Point p) {
     return QPoint(p.x(), p.y());
 }
 
+void QuadWindow::remove(Server* s) {
+    for (int i=0; i<sCount;i++) {
+        if (servers[i]->loc.equal(s->loc)) {
+            for (int j=i;j<sCount-1;j++) {
+                servers[j] = servers[j+1];
+            }
+            sCount--;
+            break;
+        }
+    }
+}
+
 void QuadWindow::setup() {
     servers[sCount] = new Server(500,500, Point(0,0), Point(1000,1000));
+    servers[sCount]->myClients.insert(new Client(servers[sCount]->loc,1000));
+    servers[sCount]->myClients.insert(new Client(servers[sCount]->loc,1000));
     sCount++;
 }
 
@@ -105,7 +124,7 @@ void QuadWindow::addClient() {
         clientCount++;
     }
 
-    if (clientCount >=15) {
+    if (clientCount >=6) {
         clientAddTimer->stop();
     }
 
@@ -123,14 +142,30 @@ void QuadWindow::serverUpdate() {
             it = tmp;
         }
 
+        servers[s]->checkOwership();
+
+    }
+    update();
+}
+
+void QuadWindow::handleAreas() {
+
+    for (int s=0;s<sCount;s++) {
+        if (servers[s]->underLoaded()) {
+            if (servers[s]->returnArea()) {
+                this->remove(servers[s]);
+                break;
+            }
+
+        }
+
         if (servers[s]->isLoaded()) {
             servers[sCount] = new Server();
             if (servers[s]->transfer(servers[sCount])) {
-                sCount++;
+             sCount++;
+             break;
             }
         }
-        servers[s]->checkOwership();
-
     }
     update();
 }

@@ -5,6 +5,10 @@
 #include "point.h"
 #include "client.h"
 
+// Defines
+#define MAXCLIENTS 5
+#define MINCLIENTS 1
+
 /*****************************************************************************
  *  Server class contains methods used in both the distributed Voronoi
  *  and QuadTree implementations.
@@ -60,6 +64,7 @@ public:
 
     void printNeighbourLocs();
     bool isLoaded();
+    bool underLoaded();
     void checkOwership();
 
 
@@ -82,7 +87,9 @@ public:
     Server(double x, double y, Point p1, Point p2);
     void addRect(Point p1, Point p2);
     bool devide();              // Devide current rectangle into four and move location to top left rect
+    void merge();
     bool transfer(Server* t);   // Transfer one of the current server's most loaded rectangles to t
+    bool returnArea();          // Selects less loaded neighbour in same lvl, else on lvl up;
     bool insideArea(Point* tp);  // Determines if the test point tp is inside the area of current server
     void addAdjacent(Server* t); // Determines if the Server t, and all its neighbours is adjacent to this, thus is a neighbour
     void ownership(Client* c);
@@ -92,10 +99,10 @@ public:
     Point loc;
     int lvl;
     Cell cell;
+    Server* parent;
+    int childCount;
     std::set<Server*> neighbor;
-
     std::set<Client*> myClients;
-    unsigned int maxClients;
 };
 
 bool ccw(Point p[], int n);

@@ -19,11 +19,12 @@ public:
     ~QuadWindow();
     void paintEvent(QPaintEvent*);
     QPoint pointToQp(Point p);
+    void remove(Server* s);
     void setup();
 public slots:
     void addClient();
     void serverUpdate();
-    
+    void handleAreas();
 private:
     Ui::QuadWindow *ui;
     QTimer* updateTimer;

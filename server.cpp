@@ -2,27 +2,31 @@
 #include "server.h"
 #include "point.h"
 
-#define MAXCLIENTS 5;
-
 Server::Server(){
     loc = Point(0,0);
-    lvl = 0;
+    lvl = -1;           // Set lvl to -1 indicationg that it has not been assignedS
     cell.n = 0;
+    childCount = 0;
     cell.origin = NULL;
-    maxClients = MAXCLIENTS;
+    parent = NULL;
 }
 
 Server::Server(double x, double y)
 {
     loc = Point(x,y);
-    lvl = 0;
+    lvl = -1;
     cell.n = 0;
+    childCount = 0;
     cell.origin = NULL;
-    maxClients = MAXCLIENTS;
+    parent = NULL;
 }
 
 bool Server::isLoaded() {
-    return this->myClients.size()>this->maxClients;
+    return this->myClients.size()>MAXCLIENTS;
+}
+
+bool Server::underLoaded() {
+    return (this->lvl !=-1 && this->myClients.size()<MINCLIENTS);
 }
 
 /************************************
@@ -231,8 +235,9 @@ Server::Server(double x, double y, Point p1, Point p2) {
     loc = Point(x,y);
     cell.n = 0;
     lvl = 0;
-    maxClients=MAXCLIENTS;
+    childCount = 0;
     this->addRect(p1,p2);
+    parent = NULL;
 }
 
 void Server::addRect(Point p1, Point p2) {
@@ -290,6 +295,25 @@ bool Server::devide() {
     return false;
 }
 
+void Server::merge() {
+    Rectangle* newR = this->cell.rect[0];
+
+    if (this->cell.n <4) {
+        return;
+    }
+
+    for (int i=1;i<this->cell.n;i++) {
+        if (newR->topLeft.x() >this->cell.rect[i]->topLeft.x() || newR->topLeft.y() >this->cell.rect[i]->topLeft.y()) {
+            newR->topLeft = this->cell.rect[i]->topLeft;
+        }
+        if (newR->botRight.x() <this->cell.rect[i]->botRight.x() || newR->botRight.y() <this->cell.rect[i]->botRight.y()) {
+            newR->botRight = this->cell.rect[i]->botRight;
+        }
+    }
+    this->cell.n=1;
+    this->loc = Point((newR->topLeft.x()+newR->botRight.x())/2, (newR->topLeft.y()+newR->botRight.y())/2);
+}
+
 /*
  *  Transfers the last owned Rectangle to t, returns true is successful.
  */
@@ -307,9 +331,10 @@ bool Server::transfer(Server *t) {
     t->loc = Point((p1.x()+p2.x())/2, (p1.y()+p2.y())/2);
     t->lvl = this->lvl;
     t->addRect(p1,p2);
-
+    t->parent = this;
     t->addAdjacent(this);
 
+    this->childCount++;
     this->checkOwership();
 
     // test all neighbours possible adjacent
@@ -320,6 +345,35 @@ bool Server::transfer(Server *t) {
         }
     }
     return true;
+}
+
+bool Server::returnArea() {
+    set <Server*>::iterator it;
+    set <Client*>::iterator cit;
+    Point p1;
+    Point p2;
+    if (this->parent != NULL && this->childCount==0) {        // Owns only one Rect
+        if (this->cell.n == 4 ) {
+            p1 = this->cell.rect[0]->topLeft;
+            p2 = this->cell.rect[2]->botRight;
+        }
+        p1 = this->cell.rect[0]->topLeft;
+        p2 = this->cell.rect[0]->botRight;
+
+        this->parent->addRect(p1,p2);
+        this->parent->childCount--;
+        this->parent->merge();
+
+        for (cit = this->myClients.begin(); cit != this->myClients.end();cit++) {
+            this->parent->myClients.insert(*cit);
+        }
+        for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
+            (*it)->neighbor.erase(this);
+        }
+        this->lvl = -1;
+        return true;
+    }
+    return false;
 }
 
 /*
