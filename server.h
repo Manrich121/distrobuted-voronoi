@@ -59,6 +59,9 @@ public:
     Server(double x, double y);
 
     void printNeighbourLocs();
+    bool isLoaded();
+    void checkOwership();
+
 
     /**********************
      *  Distributed Voronoi
@@ -80,8 +83,10 @@ public:
     void addRect(Point p1, Point p2);
     bool devide();              // Devide current rectangle into four and move location to top left rect
     bool transfer(Server* t);   // Transfer one of the current server's most loaded rectangles to t
-    bool insideArea(Point tp);  // Determines if the test point tp is inside the area of current server
+    bool insideArea(Point* tp);  // Determines if the test point tp is inside the area of current server
     void addAdjacent(Server* t); // Determines if the Server t, and all its neighbours is adjacent to this, thus is a neighbour
+    void ownership(Client* c);
+
 
 // Params
     Point loc;
@@ -89,11 +94,11 @@ public:
     Cell cell;
     std::set<Server*> neighbor;
 
-    Client* myClients[];
-    int maxClients;
+    std::set<Client*> myClients;
+    unsigned int maxClients;
 };
 
 bool ccw(Point p[], int n);
-bool inRect(Point tp, Rectangle r);
+bool inRect(Point* tp, Rectangle r);
 
 #endif // SERVER_H

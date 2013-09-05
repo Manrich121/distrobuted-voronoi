@@ -2,9 +2,14 @@
 #include "server.h"
 #include "point.h"
 
+#define MAXCLIENTS 5;
+
 Server::Server(){
+    loc = Point(0,0);
     lvl = 0;
     cell.n = 0;
+    cell.origin = NULL;
+    maxClients = MAXCLIENTS;
 }
 
 Server::Server(double x, double y)
@@ -13,6 +18,11 @@ Server::Server(double x, double y)
     lvl = 0;
     cell.n = 0;
     cell.origin = NULL;
+    maxClients = MAXCLIENTS;
+}
+
+bool Server::isLoaded() {
+    return this->myClients.size()>this->maxClients;
 }
 
 /************************************
@@ -205,9 +215,9 @@ bool ccw(Point p[], int n) {
     return sum <=0;
 }
 
-bool inRect(Point tp, Rectangle* r) {
-    if (tp.x() >= r->topLeft.x() && tp.x() <= r->botRight.x()) {
-        if (tp.y() >= r->topLeft.y() && tp.y() <= r->botRight.y()) {
+bool inRect(Point* tp, Rectangle* r) {
+    if (tp->x() >= r->topLeft.x() && tp->x() <= r->botRight.x()) {
+        if (tp->y() >= r->topLeft.y() && tp->y() <= r->botRight.y()) {
             return true;
         }
     }
@@ -221,6 +231,7 @@ Server::Server(double x, double y, Point p1, Point p2) {
     loc = Point(x,y);
     cell.n = 0;
     lvl = 0;
+    maxClients=MAXCLIENTS;
     this->addRect(p1,p2);
 }
 
@@ -299,6 +310,8 @@ bool Server::transfer(Server *t) {
 
     t->addAdjacent(this);
 
+    this->checkOwership();
+
     // test all neighbours possible adjacent
     set <Server*>::iterator it;
     for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
@@ -309,7 +322,11 @@ bool Server::transfer(Server *t) {
     return true;
 }
 
-bool Server::insideArea(Point tp) {
+/*
+ *  Determines id the test point tp is inside or on the border of the area owned
+ */
+
+bool Server::insideArea(Point* tp) {
     for (int i = 0; i < this->cell.n;i++){
         if (inRect(tp,this->cell.rect[i])) {
             return true;
@@ -318,27 +335,54 @@ bool Server::insideArea(Point tp) {
     return false;
 }
 
+/*
+ *  Tests if the Server t is adjacent and adds to neigbour list
+ */
+
 void Server::addAdjacent(Server* t) {
     int n = t->cell.n;          // get t's number of rects
     Rectangle* curRect;
 
     for (int i=0; i <n;i++) {
         curRect = t->cell.rect[i];
-        if (this->insideArea(curRect->topLeft) || this->insideArea(curRect->botRight) ||
-                this->insideArea(Point(curRect->topLeft.x(),curRect->botRight.y())) ||
-                this->insideArea(Point(curRect->botRight.x(),curRect->topLeft.y()))) {
+        if (this->insideArea(&curRect->topLeft) || this->insideArea(&curRect->botRight) ||
+                this->insideArea(new Point(curRect->topLeft.x(),curRect->botRight.y())) ||
+                this->insideArea(new Point(curRect->botRight.x(),curRect->topLeft.y()))) {
             this->neighbor.insert(t);
             t->neighbor.insert(this);
             break;
         }
     }
+}
 
+void Server::ownership(Client* c) {
+
+    if (this->insideArea(&c->loc)) {
+        return;
+    }
+
+    set <Server*>::iterator it;
+    for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
+        if ((*it)->insideArea(&c->loc)) {
+            (*it)->myClients.insert(c);
+            this->myClients.erase(c);
+        }
+    }
+
+}
+
+
+void Server::checkOwership() {
+    set <Client*>::iterator it;
+    for (it = this->myClients.begin(); it != this->myClients.end(); it++) {
+        this->ownership(*it);
+    }
 }
 
 void Server::printNeighbourLocs(){
     set <Server*>::iterator it;
     printf("My loc (%g,%g)\n",this->loc.x(),this->loc.y());
     for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
-        printf("N's' loc (%g,%g)\n",(*it)->loc.x(),(*it)->loc.y());
+        printf("N's loc (%g,%g)\n",(*it)->loc.x(),(*it)->loc.y());
     }
 }

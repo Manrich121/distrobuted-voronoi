@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QtGui>
 #include "server.h"
+#include "client.h"
 
 namespace Ui {
 class QuadWindow;
@@ -19,9 +20,14 @@ public:
     void paintEvent(QPaintEvent*);
     QPoint pointToQp(Point p);
     void setup();
+public slots:
+    void addClient();
+    void serverUpdate();
     
 private:
     Ui::QuadWindow *ui;
+    QTimer* updateTimer;
+    QTimer* clientAddTimer;
     Server* servers[10];
     int sCount;
     QColor* c[10];
