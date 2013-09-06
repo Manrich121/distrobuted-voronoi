@@ -26,7 +26,7 @@ bool Server::isLoaded() {
 }
 
 bool Server::underLoaded() {
-    return (this->lvl !=-1 && this->myClients.size()<MINCLIENTS);
+    return (this->lvl !=-1 && this->myClients.size()<MINCLIENTS && this->childCount==0);
 }
 
 /************************************
@@ -272,7 +272,9 @@ void Server::addRect(Point p1, Point p2) {
 
 bool Server::devide() {
 
-    if (this->lvl < 2) {
+    if (this->lvl == 2) {
+        return false;
+    }
         // Get Rect
         Point p1 = cell.rect[0]->topLeft;
         Point p2 = cell.rect[0]->botRight;
@@ -291,22 +293,20 @@ bool Server::devide() {
         this->loc = Point((p5.x()+p1.x())/2, (p5.y()+p1.y())/2);
         this->lvl++;
         return true;
-    }
-    return false;
 }
 
 void Server::merge() {
-    Rectangle* newR = this->cell.rect[0];
+   Rectangle* newR = this->cell.rect[0];
 
     if (this->cell.n <4) {
         return;
     }
 
     for (int i=1;i<this->cell.n;i++) {
-        if (newR->topLeft.x() >this->cell.rect[i]->topLeft.x() || newR->topLeft.y() >this->cell.rect[i]->topLeft.y()) {
+        if (newR->topLeft.x() >= this->cell.rect[i]->topLeft.x() && newR->topLeft.y() >= this->cell.rect[i]->topLeft.y()) {
             newR->topLeft = this->cell.rect[i]->topLeft;
         }
-        if (newR->botRight.x() <this->cell.rect[i]->botRight.x() || newR->botRight.y() <this->cell.rect[i]->botRight.y()) {
+        if (newR->botRight.x() <= this->cell.rect[i]->botRight.x() && newR->botRight.y() <= this->cell.rect[i]->botRight.y()) {
             newR->botRight = this->cell.rect[i]->botRight;
         }
     }
@@ -319,7 +319,7 @@ void Server::merge() {
  */
 
 bool Server::transfer(Server *t) {
-    if (this->cell.n -1 <= 0) {
+    if (this->cell.n == 1) {
         bool success = this->devide();
         if (!success) {
             return false;
@@ -353,20 +353,19 @@ bool Server::returnArea() {
     Point p1;
     Point p2;
     if (this->parent != NULL && this->childCount==0) {        // Owns only one Rect
-        if (this->cell.n == 4 ) {
-            p1 = this->cell.rect[0]->topLeft;
-            p2 = this->cell.rect[2]->botRight;
-        }
         p1 = this->cell.rect[0]->topLeft;
         p2 = this->cell.rect[0]->botRight;
 
         this->parent->addRect(p1,p2);
         this->parent->childCount--;
-        this->parent->merge();
+        if (this->parent->parent != NULL || this->parent->lvl == 2) {
+            this->parent->merge();
+        }
 
         for (cit = this->myClients.begin(); cit != this->myClients.end();cit++) {
             this->parent->myClients.insert(*cit);
         }
+
         for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
             (*it)->neighbor.erase(this);
         }

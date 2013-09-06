@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QtGui>
+#include <QGraphicsItem>
 #include "server.h"
 #include "client.h"
 
@@ -21,11 +22,14 @@ public:
     QPoint pointToQp(Point p);
     void remove(Server* s);
     void setup();
+
+
 public slots:
     void addClient();
     void serverUpdate();
     void handleAreas();
 private:
+
     Ui::QuadWindow *ui;
     QTimer* updateTimer;
     QTimer* clientAddTimer;

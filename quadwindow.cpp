@@ -5,6 +5,8 @@
 #include "time.h"
 #include "stdlib.h"
 
+QPushButton *button;
+int clientCount =0;
 QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWindow)
 {
     srand(time(NULL));
@@ -27,12 +29,15 @@ QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWind
     c[15] = new QColor(Qt::lightGray);
 
     ui->setupUi(this);
+
+    button = new QPushButton("&AddClient", this);
+    connect(button, SIGNAL(clicked()), this, SLOT(addClient()));
     setup();
     update();
 
     //Update timer
     updateTimer = new QTimer();
-    updateTimer->setInterval(100);
+    updateTimer->setInterval(50);
     connect(updateTimer, SIGNAL(timeout()), this, SLOT(serverUpdate()));
     connect(updateTimer, SIGNAL(timeout()), this, SLOT(handleAreas()));
     updateTimer->start();
@@ -40,7 +45,7 @@ QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWind
     //client add timer
     clientAddTimer = new QTimer();
     clientAddTimer->setInterval(2000);
-    connect(clientAddTimer, SIGNAL(timeout()), this, SLOT(addClient()));
+//    connect(clientAddTimer, SIGNAL(timeout()), this, SLOT(addClient()));
     clientAddTimer->start();
 }
 
@@ -114,14 +119,21 @@ void QuadWindow::setup() {
     servers[sCount] = new Server(500,500, Point(0,0), Point(1000,1000));
     servers[sCount]->myClients.insert(new Client(servers[sCount]->loc,1000));
     servers[sCount]->myClients.insert(new Client(servers[sCount]->loc,1000));
+    clientCount++;
+    clientCount++;
     sCount++;
 }
 
-int clientCount =0;
+
 void QuadWindow::addClient() {
+    std::string s;
+    std::stringstream out;
+
     if (!servers[sCount-1]->isLoaded()) {
         servers[sCount-1]->myClients.insert(new Client(servers[sCount-1]->loc,1000));
-        clientCount++;
+        out << ++clientCount;
+        s = out.str();
+        button->setText(QString(s.c_str()));
     }
 
     if (clientCount >=6) {
@@ -162,8 +174,8 @@ void QuadWindow::handleAreas() {
         if (servers[s]->isLoaded()) {
             servers[sCount] = new Server();
             if (servers[s]->transfer(servers[sCount])) {
-             sCount++;
-             break;
+                sCount++;
+                break;
             }
         }
     }
