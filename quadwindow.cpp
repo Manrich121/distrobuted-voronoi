@@ -52,12 +52,12 @@ QuadWindow::~QuadWindow()
 
 
 void QuadWindow::paintEvent(QPaintEvent*) {
-    int n;
     int i= 0;
     std::string s;
 
     set <Client*>::iterator it;
     set <Server*>::iterator sit;
+    std::set<Rectangle*>::iterator rit;
 
     QPainter painter(this);
     // Pen
@@ -81,10 +81,9 @@ void QuadWindow::paintEvent(QPaintEvent*) {
         }
 
 
-        n = (*sit)->cell.n;
-        for (int j=0;j<n;j++) {
-            QPoint p1 = pointToQp((*sit)->cell.rect[j]->topLeft);
-            QPoint p2 = pointToQp((*sit)->cell.rect[j]->botRight);
+        for (rit = (*sit)->cell.rect.begin(); rit != (*sit)->cell.rect.end();rit++) {
+            QPoint p1 = pointToQp((*rit)->topLeft);
+            QPoint p2 = pointToQp((*rit)->botRight);
 
             pen.setWidth(2);
             painter.setPen(pen);
@@ -144,6 +143,7 @@ void QuadWindow::removeClient() {
             out << --clientCount;
             s = out.str();
             ui->addClients->setText(QString(s.c_str()));
+            break;
         }
     }
 }

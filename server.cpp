@@ -260,7 +260,12 @@ void Server::addRect(Point p1, Point p2) {
         p1.setY(tempy);
     }
 
-    this->cell.rect[cell.n++] = new Rectangle(p1,p2);
+    this->cell.rect.insert(new Rectangle(p1,p2));
+    cell.n++;
+}
+
+void Server::addRect(Rectangle* r) {
+    this->addRect(r->topLeft, r->botRight);
 }
 
 /*
@@ -277,9 +282,10 @@ bool Server::devide() {
         return false;
     }
         // Get Rect
-        Point p1 = cell.rect[0]->topLeft;
-        Point p2 = cell.rect[0]->botRight;
+        Point p1 = (*cell.rect.begin())->topLeft;
+        Point p2 = (*cell.rect.begin())->botRight;
         this->cell.n = 0;
+        this->cell.rect.clear();
 
         // Devide into four rects and add to this.cell
         Point p3 = Point(p2.x(), p1.y());
@@ -303,19 +309,22 @@ bool Server::devide() {
  */
 
 bool Server::merge() {
-   Rectangle* newR = this->cell.rect[0];
+    std::set<Rectangle*>::iterator it;
+    Rectangle* curRect;
+    Rectangle* newR = (*cell.rect.begin());
 
     if (this->cell.n != 4) {
         return false;
     }
 
     // Find the rectangle that is the largest
-    for (int i=1;i<this->cell.n;i++) {
-        if (newR->topLeft.x() >= this->cell.rect[i]->topLeft.x() && newR->topLeft.y() >= this->cell.rect[i]->topLeft.y()) {
-            newR->topLeft = this->cell.rect[i]->topLeft;
+    for (it = this->cell.rect.begin(); it != cell.rect.end();it++) {
+        curRect = (*it);
+        if (newR->topLeft.x() >= curRect->topLeft.x() && newR->topLeft.y() >= curRect->topLeft.y()) {
+            newR->topLeft = curRect->topLeft;
         }
-        if (newR->botRight.x() <= this->cell.rect[i]->botRight.x() && newR->botRight.y() <= this->cell.rect[i]->botRight.y()) {
-            newR->botRight = this->cell.rect[i]->botRight;
+        if (newR->botRight.x() <= curRect->botRight.x() && newR->botRight.y() <= curRect->botRight.y()) {
+            newR->botRight = curRect->botRight;
         }
     }
 
@@ -327,8 +336,9 @@ bool Server::merge() {
     }
 #endif
 
-    this->cell.n=1;
-//    this->addRect(newR->topLeft, newR->botRight);   //add new rect
+    this->cell.n=0;
+    this->cell.rect.clear();
+    this->addRect(newR);
     this->lvl--;
     this->loc = Point((newR->topLeft.x()+newR->botRight.x())/2, (newR->topLeft.y()+newR->botRight.y())/2);
     return true;
@@ -345,27 +355,45 @@ bool Server::transfer(Server *t) {
         }
     }
 
-    int n = --this->cell.n;
-    Point p1 = this->cell.rect[n]->topLeft;
-    Point p2 = this->cell.rect[n]->botRight;
+    Rectangle* curRect = (*this->cell.rect.begin());
+    Point p1 = curRect->topLeft;
+    Point p2 = curRect->botRight;
 
-    t->lvl = this->lvl;
+    this->cell.rect.erase(curRect);
+    this->cell.n--;
+
     t->addRect(p1,p2);
+    t->lvl = this->lvl;
+
     t->loc = Point((p1.x()+p2.x())/2, (p1.y()+p2.y())/2);
 
     t->parent = this;
     this->childCount++;
 
     t->addAdjacent(this);
+
     this->checkOwership();
+
+//    while (this->isLoaded()) {
+//        curRect = (*this->cell.rect.rbegin());
+//        this->cell.rect.erase(curRect);
+//        this->cell.n--;
+//        t->addRect(curRect);
+//        t->addAdjacent(this);
+//        this->checkOwership();
+//    }
+
 
     // test all neighbours possible adjacent
     set <Server*>::iterator it;
     for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
         if ((*it)!=t) {
             t->addAdjacent(*it);
+            (*it)->neighbor.erase(this);
+            (*it)->addAdjacent(this);
         }
     }
+
     return true;
 }
 
@@ -374,12 +402,11 @@ bool Server::returnArea() {
     set <Client*>::iterator cit;
 
     if (this->parent!=NULL && this->parent->lvl == this->lvl && childCount == 0 ) {
-        Point p1 = this->cell.rect[0]->topLeft;
-        Point p2 = this->cell.rect[0]->botRight;
+        Rectangle* curR = (*this->cell.rect.begin());
 
         // Remove self from parent
         this->parent->childCount--;
-        this->parent->addRect(p1,p2);
+        this->parent->addRect(curR);
 
         this->parent->merge();
 
@@ -409,8 +436,9 @@ bool Server::returnArea() {
  */
 
 bool Server::insideArea(Point* tp) {
-    for (int i = 0; i < this->cell.n;i++){
-        if (inRect(tp,this->cell.rect[i])) {
+    std::set<Rectangle*>::iterator it;
+    for (it = this->cell.rect.begin(); it != cell.rect.end();it++) {
+        if (inRect(tp,(*it))) {
             return true;
         }
     }
@@ -422,11 +450,11 @@ bool Server::insideArea(Point* tp) {
  */
 
 void Server::addAdjacent(Server* t) {
-    int n = t->cell.n;          // get t's number of rects
+    std::set<Rectangle*>::iterator it;
     Rectangle* curRect;
 
-    for (int i=0; i <n;i++) {
-        curRect = t->cell.rect[i];
+    for (it = this->cell.rect.begin(); it != cell.rect.end();it++) {
+        curRect = (*it);
         if (this->insideArea(&curRect->topLeft) || this->insideArea(&curRect->botRight) ||
                 this->insideArea(new Point(curRect->topLeft.x(),curRect->botRight.y())) ||
                 this->insideArea(new Point(curRect->botRight.x(),curRect->topLeft.y()))) {
