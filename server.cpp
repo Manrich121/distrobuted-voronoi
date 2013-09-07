@@ -1,7 +1,7 @@
 #include <cstdio>
 #include "server.h"
 #include "point.h"
-#define _DEBUG
+
 
 Server::Server(){
     loc = Point(0,0);
@@ -305,7 +305,7 @@ bool Server::devide() {
 bool Server::merge() {
    Rectangle* newR = this->cell.rect[0];
 
-    if (this->cell.n != 4 || this->lvl != 2) {
+    if (this->cell.n != 4) {
         return false;
     }
 
@@ -344,13 +344,15 @@ bool Server::transfer(Server *t) {
             return false;
         }
     }
+
     int n = --this->cell.n;
     Point p1 = this->cell.rect[n]->topLeft;
     Point p2 = this->cell.rect[n]->botRight;
-    t->loc = Point((p1.x()+p2.x())/2, (p1.y()+p2.y())/2);
-    t->lvl = this->lvl;
 
+    t->lvl = this->lvl;
     t->addRect(p1,p2);
+    t->loc = Point((p1.x()+p2.x())/2, (p1.y()+p2.y())/2);
+
     t->parent = this;
     this->childCount++;
 

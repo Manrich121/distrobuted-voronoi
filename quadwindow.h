@@ -26,8 +26,13 @@ public:
 
 public slots:
     void addClient();
+    void removeClient();
     void clientUpdate();
     void handleAreas();
+private slots:
+    void on_addClients_clicked();
+    void on_removeClient_clicked();
+
 private:
 
     Ui::QuadWindow *ui;

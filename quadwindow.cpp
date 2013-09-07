@@ -5,7 +5,6 @@
 #include "time.h"
 #include "stdlib.h"
 
-QPushButton *button;
 int clientCount =0;
 QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWindow)
 {
@@ -29,8 +28,6 @@ QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWind
 
     ui->setupUi(this);
 
-    button = new QPushButton("&AddClient", this);
-    connect(button, SIGNAL(clicked()), this, SLOT(addClient()));
     setup();
     update();
 
@@ -125,7 +122,7 @@ void QuadWindow::addClient() {
         (*servers.rbegin())->myClients.insert(new Client((*servers.rbegin())->loc,1000));
         out << ++clientCount;
         s = out.str();
-        button->setText(QString(s.c_str()));
+        ui->addClients->setText(QString(s.c_str()));
     }
 
     if (clientCount >=6) {
@@ -133,6 +130,24 @@ void QuadWindow::addClient() {
     }
 
 }
+
+void QuadWindow::removeClient() {
+    set <Server*>::iterator sit;
+    Server* curServ;
+    std::string s;
+    std::stringstream out;
+
+    for (sit = this->servers.begin(); sit != this->servers.end(); sit++) {
+        curServ = (*sit);
+        if (!curServ->myClients.empty()) {
+            curServ->myClients.erase(*curServ->myClients.rbegin());
+            out << --clientCount;
+            s = out.str();
+            ui->addClients->setText(QString(s.c_str()));
+        }
+    }
+}
+
 
 void QuadWindow::clientUpdate() {
     set <Server*>::iterator sit;
@@ -182,4 +197,15 @@ void QuadWindow::handleAreas() {
         }
     }
     update();
+}
+
+void QuadWindow::on_addClients_clicked()
+{
+    this->addClient();
+
+}
+
+void QuadWindow::on_removeClient_clicked()
+{
+    this->removeClient();
 }

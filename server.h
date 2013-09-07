@@ -9,6 +9,8 @@
 #define MAXCLIENTS 5
 #define MINCLIENTS 1
 
+#define _DEBUG
+
 /*****************************************************************************
  *  Server class contains methods used in both the distributed Voronoi
  *  and QuadTree implementations.
@@ -52,8 +54,8 @@ public:
 
 struct Cell {
     int n;
-    Vertex* origin;         // pointer to origin of polygon Assume counter clockwise sequence
-    Rectangle* rect[4];           // Sets of two points each defining a rectangle
+    Vertex* origin;             // pointer to origin of polygon Assume counter clockwise sequence
+    std::set<Rectangle*> rect;  // A Set of point Rectangle objects each defining a rectangle
 };
 
 class Server
@@ -104,8 +106,10 @@ public:
     std::set<Server*> neighbor;
     std::set<Client*> myClients;
 
-    // Debuggin
+
+#ifdef _DEBUG
     bool master;
+#endif
 };
 
 bool ccw(Point p[], int n);
