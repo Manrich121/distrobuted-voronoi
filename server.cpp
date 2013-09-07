@@ -26,7 +26,7 @@ bool Server::isLoaded() {
 }
 
 bool Server::underLoaded() {
-    return (this->lvl !=-1 && this->myClients.size()<MINCLIENTS && this->childCount==0);
+    return (this->lvl !=-1 && this->myClients.size()<MINCLIENTS && this->cell.n==1);
 }
 
 /************************************
@@ -243,8 +243,8 @@ Server::Server(double x, double y, Point p1, Point p2) {
 void Server::addRect(Point p1, Point p2) {
     double tempx;
     double tempy;
-    if (cell.n + 1 > 4) {
-        cell.n = 0;
+    if (cell.n == 4) {
+        return;
     }
 
     if (p1.x() > p2.x()) {
@@ -259,6 +259,10 @@ void Server::addRect(Point p1, Point p2) {
     }
 
     this->cell.rect[cell.n++] = new Rectangle(p1,p2);
+
+    if (cell.n == 4) {
+        this->merge();
+    }
 }
 
 /*
@@ -295,11 +299,11 @@ bool Server::devide() {
         return true;
 }
 
-void Server::merge() {
+bool Server::merge() {
    Rectangle* newR = this->cell.rect[0];
 
-    if (this->cell.n <4) {
-        return;
+    if (this->lvl != 2) {
+        return false;
     }
 
     for (int i=1;i<this->cell.n;i++) {
@@ -311,7 +315,10 @@ void Server::merge() {
         }
     }
     this->cell.n=1;
+//    this->addRect(newR->topLeft, newR->botRight);   //add new rect
+    this->lvl--;
     this->loc = Point((newR->topLeft.x()+newR->botRight.x())/2, (newR->topLeft.y()+newR->botRight.y())/2);
+    return true;
 }
 
 /*
@@ -332,9 +339,9 @@ bool Server::transfer(Server *t) {
     t->lvl = this->lvl;
     t->addRect(p1,p2);
     t->parent = this;
-    t->addAdjacent(this);
-
     this->childCount++;
+
+    t->addAdjacent(this);
     this->checkOwership();
 
     // test all neighbours possible adjacent
@@ -350,25 +357,26 @@ bool Server::transfer(Server *t) {
 bool Server::returnArea() {
     set <Server*>::iterator it;
     set <Client*>::iterator cit;
-    Point p1;
-    Point p2;
-    if (this->parent != NULL && this->childCount==0) {        // Owns only one Rect
-        p1 = this->cell.rect[0]->topLeft;
-        p2 = this->cell.rect[0]->botRight;
+
+    if (this->parent!=NULL && this->parent->lvl == this->lvl) {
+        Point p1 = this->cell.rect[0]->topLeft;
+        Point p2 = this->cell.rect[0]->botRight;
 
         this->parent->addRect(p1,p2);
+        // Remove self from parent
         this->parent->childCount--;
-        if (this->parent->parent != NULL || this->parent->lvl == 2) {
-            this->parent->merge();
-        }
 
+        // Transfer all myClients
         for (cit = this->myClients.begin(); cit != this->myClients.end();cit++) {
             this->parent->myClients.insert(*cit);
         }
 
+        // Remove this from all neighbour lists
         for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
             (*it)->neighbor.erase(this);
         }
+
+        // Set lvl be deleted
         this->lvl = -1;
         return true;
     }

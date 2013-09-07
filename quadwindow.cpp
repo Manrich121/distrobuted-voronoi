@@ -66,7 +66,7 @@ void QuadWindow::paintEvent(QPaintEvent*) {
     QPen pen;
     for (int i=0;i<sCount;i++) {
         std::stringstream out;
-        out << i;
+        out << servers[i]->lvl;
         s = out.str();
 
         pen.setWidth(5);
@@ -105,12 +105,14 @@ QPoint QuadWindow::pointToQp(Point p) {
 
 void QuadWindow::remove(Server* s) {
     for (int i=0; i<sCount;i++) {
-        if (servers[i]->loc.equal(s->loc)) {
+        if (servers[i]==s) {
+
             for (int j=i;j<sCount-1;j++) {
                 servers[j] = servers[j+1];
             }
+
             sCount--;
-            break;
+            return;
         }
     }
 }
@@ -168,10 +170,9 @@ void QuadWindow::handleAreas() {
                 this->remove(servers[s]);
                 break;
             }
-
         }
 
-        if (servers[s]->isLoaded()) {
+        if (servers[s]->isLoaded() && sCount <16) {
             servers[sCount] = new Server();
             if (servers[s]->transfer(servers[sCount])) {
                 sCount++;

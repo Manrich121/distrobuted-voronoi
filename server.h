@@ -87,7 +87,7 @@ public:
     Server(double x, double y, Point p1, Point p2);
     void addRect(Point p1, Point p2);
     bool devide();              // Devide current rectangle into four and move location to top left rect
-    void merge();
+    bool merge();
     bool transfer(Server* t);   // Transfer one of the current server's most loaded rectangles to t
     bool returnArea();          // Selects less loaded neighbour in same lvl, else on lvl up;
     bool insideArea(Point* tp);  // Determines if the test point tp is inside the area of current server
