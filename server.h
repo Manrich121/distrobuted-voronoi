@@ -103,6 +103,9 @@ public:
     int childCount;
     std::set<Server*> neighbor;
     std::set<Client*> myClients;
+
+    // Debuggin
+    bool master;
 };
 
 bool ccw(Point p[], int n);

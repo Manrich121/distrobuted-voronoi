@@ -10,7 +10,6 @@ int clientCount =0;
 QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWindow)
 {
     srand(time(NULL));
-    sCount = 0;
     c[0] = new QColor(Qt::red);
     c[1] = new QColor(Qt::blue);
     c[2] = new QColor(Qt::black);
@@ -38,7 +37,7 @@ QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWind
     //Update timer
     updateTimer = new QTimer();
     updateTimer->setInterval(50);
-    connect(updateTimer, SIGNAL(timeout()), this, SLOT(serverUpdate()));
+    connect(updateTimer, SIGNAL(timeout()), this, SLOT(clientUpdate()));
     connect(updateTimer, SIGNAL(timeout()), this, SLOT(handleAreas()));
     updateTimer->start();
 
@@ -57,41 +56,44 @@ QuadWindow::~QuadWindow()
 
 void QuadWindow::paintEvent(QPaintEvent*) {
     int n;
+    int i= 0;
     std::string s;
 
     set <Client*>::iterator it;
+    set <Server*>::iterator sit;
 
     QPainter painter(this);
     // Pen
     QPen pen;
-    for (int i=0;i<sCount;i++) {
+    for (sit = this->servers.begin(); sit != this->servers.end(); sit++) {
         std::stringstream out;
-        out << servers[i]->lvl;
+        out << (*sit)->lvl;
         s = out.str();
 
         pen.setWidth(5);
         pen.setColor(*c[i]);
         painter.setPen(pen);
 
-        if (servers[i]->lvl == -1) {
+        if ((*sit)->lvl == -1) {
             continue;
         }
-        painter.drawText(pointToQp(servers[i]->loc),QString(s.c_str()));
+        painter.drawText(pointToQp((*sit)->loc),QString(s.c_str()));
 
-        for (it = servers[i]->myClients.begin(); it != servers[i]->myClients.end(); it++) {
+        for (it = (*sit)->myClients.begin(); it != (*sit)->myClients.end(); it++) {
             painter.drawPoint(pointToQp((*it)->loc));
         }
 
 
-        n = servers[i]->cell.n;
+        n = (*sit)->cell.n;
         for (int j=0;j<n;j++) {
-            QPoint p1 = pointToQp(servers[i]->cell.rect[j]->topLeft);
-            QPoint p2 = pointToQp(servers[i]->cell.rect[j]->botRight);
+            QPoint p1 = pointToQp((*sit)->cell.rect[j]->topLeft);
+            QPoint p2 = pointToQp((*sit)->cell.rect[j]->botRight);
 
             pen.setWidth(2);
             painter.setPen(pen);
             painter.drawRect(QRect(p1,p2));
         }
+        i++;
     }
 
 //    QRect r = QRect(QPoint(400,400),QPoint(0,0));
@@ -103,27 +105,15 @@ QPoint QuadWindow::pointToQp(Point p) {
     return QPoint(p.x(), p.y());
 }
 
-void QuadWindow::remove(Server* s) {
-    for (int i=0; i<sCount;i++) {
-        if (servers[i]==s) {
-
-            for (int j=i;j<sCount-1;j++) {
-                servers[j] = servers[j+1];
-            }
-
-            sCount--;
-            return;
-        }
-    }
-}
-
 void QuadWindow::setup() {
-    servers[sCount] = new Server(500,500, Point(0,0), Point(1000,1000));
-    servers[sCount]->myClients.insert(new Client(servers[sCount]->loc,1000));
-    servers[sCount]->myClients.insert(new Client(servers[sCount]->loc,1000));
+    Server* curServ = new Server(500,500);
+    curServ->master = true;
+    curServ->addRect(Point(0,0), Point(1000,1000));
+    curServ->myClients.insert(new Client(curServ->loc,1000));
     clientCount++;
+    curServ->myClients.insert(new Client(curServ->loc,1000));
     clientCount++;
-    sCount++;
+    servers.insert(curServ);
 }
 
 
@@ -131,8 +121,8 @@ void QuadWindow::addClient() {
     std::string s;
     std::stringstream out;
 
-    if (!servers[sCount-1]->isLoaded()) {
-        servers[sCount-1]->myClients.insert(new Client(servers[sCount-1]->loc,1000));
+    if (!(*servers.rbegin())->isLoaded()) {
+        (*servers.rbegin())->myClients.insert(new Client((*servers.rbegin())->loc,1000));
         out << ++clientCount;
         s = out.str();
         button->setText(QString(s.c_str()));
@@ -144,38 +134,49 @@ void QuadWindow::addClient() {
 
 }
 
-void QuadWindow::serverUpdate() {
+void QuadWindow::clientUpdate() {
+    set <Server*>::iterator sit;
     set <Client*>::iterator it;
     set <Client*>::iterator tmp;
-    int numServers = sCount;
-    for (int s=0;s <numServers;s++) {
-        for (it = servers[s]->myClients.begin(); it != servers[s]->myClients.end();) {
+
+    for (sit = this->servers.begin(); sit != this->servers.end(); sit++) {
+        for (it = (*sit)->myClients.begin(); it != (*sit)->myClients.end();) {
             tmp = it;
             (*it)->move();
             ++tmp;
             it = tmp;
         }
 
-        servers[s]->checkOwership();
+        (*sit)->checkOwership();
 
     }
     update();
 }
 
 void QuadWindow::handleAreas() {
+    set <Server*>::iterator sit;
+    Server* curServ;
 
-    for (int s=0;s<sCount;s++) {
-        if (servers[s]->underLoaded()) {
-            if (servers[s]->returnArea()) {
-                this->remove(servers[s]);
+    for (sit = this->servers.begin(); sit != this->servers.end(); sit++) {
+        curServ = (*sit);
+
+        if (curServ->underLoaded()) {
+            if (curServ->returnArea()) {
+                servers.erase((curServ));
                 break;
             }
         }
+//        if (servers[s]->underLoaded()) {
+//            if (servers[s]->returnArea()) {
+//                this->remove(servers[s]);
+//                break;
+//            }
+//        }
 
-        if (servers[s]->isLoaded() && sCount <16) {
-            servers[sCount] = new Server();
-            if (servers[s]->transfer(servers[sCount])) {
-                sCount++;
+        if (curServ->isLoaded() && servers.size() <16) {
+            Server* newServ = new Server();
+            if (curServ->transfer(newServ)) {
+                servers.insert(newServ);
                 break;
             }
         }

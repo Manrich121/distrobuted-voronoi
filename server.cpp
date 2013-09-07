@@ -1,6 +1,7 @@
 #include <cstdio>
 #include "server.h"
 #include "point.h"
+#define _DEBUG
 
 Server::Server(){
     loc = Point(0,0);
@@ -9,16 +10,18 @@ Server::Server(){
     childCount = 0;
     cell.origin = NULL;
     parent = NULL;
+    master = false;
 }
 
 Server::Server(double x, double y)
 {
     loc = Point(x,y);
-    lvl = -1;
+    lvl = 0;
     cell.n = 0;
     childCount = 0;
     cell.origin = NULL;
     parent = NULL;
+    master = false;
 }
 
 bool Server::isLoaded() {
@@ -231,15 +234,14 @@ bool inRect(Point* tp, Rectangle* r) {
 /***************************************
  *  QuadTree
  **************************************/
-Server::Server(double x, double y, Point p1, Point p2) {
-    loc = Point(x,y);
-    cell.n = 0;
-    lvl = 0;
-    childCount = 0;
-    this->addRect(p1,p2);
-    parent = NULL;
-}
 
+/*
+ *  Adds a new Rectangle, enforcing topLeft and botRight Rectangle format
+ *  p1-------
+ *  |       |
+ *  |       |
+ *  -------p2
+ */
 void Server::addRect(Point p1, Point p2) {
     double tempx;
     double tempy;
@@ -259,10 +261,6 @@ void Server::addRect(Point p1, Point p2) {
     }
 
     this->cell.rect[cell.n++] = new Rectangle(p1,p2);
-
-    if (cell.n == 4) {
-        this->merge();
-    }
 }
 
 /*
@@ -273,7 +271,6 @@ void Server::addRect(Point p1, Point p2) {
  *
  *  Can only devide upto level 2.
  */
-
 bool Server::devide() {
 
     if (this->lvl == 2) {
@@ -289,23 +286,30 @@ bool Server::devide() {
         Point p4 = Point(p1.x(), p2.y());
         Point p5 = Point((p2.x() + p1.x())/2,(p2.y() + p1.y())/2);
 
+        // Add all four rectangles
         this->addRect(p1,p5);
         this->addRect(p5,p3);
         this->addRect(p5,p2);
         this->addRect(p4,p5);
 
+        // Set location in topLeft rect and increase lvl
         this->loc = Point((p5.x()+p1.x())/2, (p5.y()+p1.y())/2);
         this->lvl++;
         return true;
 }
 
+/*
+ *  Determines if four rectangles can merge into one. Returns true if successful, else false
+ */
+
 bool Server::merge() {
    Rectangle* newR = this->cell.rect[0];
 
-    if (this->lvl != 2) {
+    if (this->cell.n != 4 || this->lvl != 2) {
         return false;
     }
 
+    // Find the rectangle that is the largest
     for (int i=1;i<this->cell.n;i++) {
         if (newR->topLeft.x() >= this->cell.rect[i]->topLeft.x() && newR->topLeft.y() >= this->cell.rect[i]->topLeft.y()) {
             newR->topLeft = this->cell.rect[i]->topLeft;
@@ -314,6 +318,15 @@ bool Server::merge() {
             newR->botRight = this->cell.rect[i]->botRight;
         }
     }
+
+#ifdef _DEBUG
+    if (this->master) {
+        if (!(newR->topLeft.equal(Point(0,0)) && newR->botRight.equal(Point(500,500)))) {
+            printf("bug");
+        }
+    }
+#endif
+
     this->cell.n=1;
 //    this->addRect(newR->topLeft, newR->botRight);   //add new rect
     this->lvl--;
@@ -322,13 +335,12 @@ bool Server::merge() {
 }
 
 /*
- *  Transfers the last owned Rectangle to t, returns true is successful.
+ *  Transfers the a Rectangle to t, returns true is successful.
  */
 
 bool Server::transfer(Server *t) {
     if (this->cell.n == 1) {
-        bool success = this->devide();
-        if (!success) {
+        if (!this->devide()) {
             return false;
         }
     }
@@ -337,6 +349,7 @@ bool Server::transfer(Server *t) {
     Point p2 = this->cell.rect[n]->botRight;
     t->loc = Point((p1.x()+p2.x())/2, (p1.y()+p2.y())/2);
     t->lvl = this->lvl;
+
     t->addRect(p1,p2);
     t->parent = this;
     this->childCount++;
@@ -358,21 +371,27 @@ bool Server::returnArea() {
     set <Server*>::iterator it;
     set <Client*>::iterator cit;
 
-    if (this->parent!=NULL && this->parent->lvl == this->lvl) {
+    if (this->parent!=NULL && this->parent->lvl == this->lvl && childCount == 0 ) {
         Point p1 = this->cell.rect[0]->topLeft;
         Point p2 = this->cell.rect[0]->botRight;
 
-        this->parent->addRect(p1,p2);
         // Remove self from parent
         this->parent->childCount--;
+        this->parent->addRect(p1,p2);
+
+        this->parent->merge();
+
 
         // Transfer all myClients
         for (cit = this->myClients.begin(); cit != this->myClients.end();cit++) {
             this->parent->myClients.insert(*cit);
         }
 
-        // Remove this from all neighbour lists
+        this->parent->checkOwership();
+
+        // Remove me from all neighbour lists
         for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
+            this->parent->addAdjacent(*it);
             (*it)->neighbor.erase(this);
         }
 
@@ -417,6 +436,7 @@ void Server::addAdjacent(Server* t) {
 }
 
 void Server::ownership(Client* c) {
+    bool found = false;
 
     if (this->insideArea(&c->loc)) {
         return;
@@ -425,11 +445,15 @@ void Server::ownership(Client* c) {
     set <Server*>::iterator it;
     for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
         if ((*it)->insideArea(&c->loc)) {
+            found = true;
             (*it)->myClients.insert(c);
             this->myClients.erase(c);
         }
     }
 
+    if (!found) {
+        printf("bug");
+    }
 }
 
 

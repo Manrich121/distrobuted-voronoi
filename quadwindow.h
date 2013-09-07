@@ -1,6 +1,7 @@
 #ifndef QUADWINDOW_H
 #define QUADWINDOW_H
 
+#include <set>
 #include <QMainWindow>
 #include <QtGui>
 #include <QGraphicsItem>
@@ -20,21 +21,19 @@ public:
     ~QuadWindow();
     void paintEvent(QPaintEvent*);
     QPoint pointToQp(Point p);
-    void remove(Server* s);
     void setup();
 
 
 public slots:
     void addClient();
-    void serverUpdate();
+    void clientUpdate();
     void handleAreas();
 private:
 
     Ui::QuadWindow *ui;
     QTimer* updateTimer;
     QTimer* clientAddTimer;
-    Server* servers[16];
-    int sCount;
+    std::set<Server*> servers;
     QColor* c[16];
 };
 

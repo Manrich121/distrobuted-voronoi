@@ -8,19 +8,35 @@ Client::Client() {
 Client::Client(Point p, int max) {
     loc = p;
     vx = rand()%5 +1;
-    vy = rand()%5 +3;
+    vy = rand()%5 +1;
     edge = max;
 }
 
 void Client::move() {
-    loc.setX(loc.x() + vx);
-    loc.setY(loc.y() + vy);
+    double x = loc.x()+vx;
+    double y = loc.y()+vy;
+    if (x>edge-1) {
+        x = edge-1;
+    }
+    if(x<0) {
+        x=0;
+    }
 
-    if (loc.x() >= edge || loc.x() <= 0 ) {
+    if (y>edge-1) {
+        y = edge-1;
+    }
+    if(y<0) {
+        y=0;
+    }
+
+    loc.setX(x);
+    loc.setY(y);
+
+    if (loc.x() >= edge-1 || loc.x() <= 0 ) {
         vx = -vx;
     }
 
-    if (loc.y() >= edge || loc.y() <= 0) {
+    if (loc.y() >= edge-1 || loc.y() <= 0) {
         vy = -vy;
     }
 }
