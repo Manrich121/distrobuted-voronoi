@@ -28,7 +28,7 @@ public slots:
     void addClient();
     void removeClient();
     void clientUpdate();
-    void handleAreas();
+    void checkLoad();
 private slots:
     void on_addClients_clicked();
     void on_removeClient_clicked();
@@ -37,7 +37,7 @@ private:
 
     Ui::QuadWindow *ui;
     QTimer* updateTimer;
-    QTimer* clientAddTimer;
+    QTimer* loadTimer;
     std::set<Server*> servers;
     QColor* c[16];
 };

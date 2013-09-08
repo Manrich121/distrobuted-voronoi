@@ -5,7 +5,7 @@
 
 Server::Server(){
     loc = Point(0,0);
-    lvl = -1;           // Set lvl to -1 indicationg that it has not been assignedS
+    lvl = -1;           // Set lvl to -1 indicationg that it has not been assigned
     cell.n = 0;
     childCount = 0;
     cell.origin = NULL;
@@ -260,7 +260,7 @@ void Server::addRect(Point p1, Point p2) {
         p1.setY(tempy);
     }
 
-    this->cell.rect.insert(new Rectangle(p1,p2));
+    this->cell.rect.push_back(new Rectangle(p1,p2));
     cell.n++;
 }
 
@@ -269,7 +269,7 @@ void Server::addRect(Rectangle* r) {
 }
 
 /*
- *  Devide the current rectangle into four and return if true if successful.
+ *  Devide the current rectangle into four and return true if successful.
  *  |  1  |  2  |
  *  -------------
  *  |  4  |  3  |
@@ -309,7 +309,7 @@ bool Server::devide() {
  */
 
 bool Server::merge() {
-    std::set<Rectangle*>::iterator it;
+    std::list<Rectangle*>::iterator it;
     Rectangle* curRect;
     Rectangle* newR = (*cell.rect.begin());
 
@@ -355,11 +355,11 @@ bool Server::transfer(Server *t) {
         }
     }
 
-    Rectangle* curRect = (*this->cell.rect.begin());
+    Rectangle* curRect = (*this->cell.rect.rbegin());
     Point p1 = curRect->topLeft;
     Point p2 = curRect->botRight;
 
-    this->cell.rect.erase(curRect);
+    this->cell.rect.pop_back();
     this->cell.n--;
 
     t->addRect(p1,p2);
@@ -376,7 +376,7 @@ bool Server::transfer(Server *t) {
 
 //    while (this->isLoaded()) {
 //        curRect = (*this->cell.rect.rbegin());
-//        this->cell.rect.erase(curRect);
+//        this->cell.rect.pop_back();
 //        this->cell.n--;
 //        t->addRect(curRect);
 //        t->addAdjacent(this);
@@ -386,13 +386,22 @@ bool Server::transfer(Server *t) {
 
     // test all neighbours possible adjacent
     set <Server*>::iterator it;
-    for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
         if ((*it)!=t) {
             t->addAdjacent(*it);
-            (*it)->neighbor.erase(this);
+            (*it)->neighbours.erase(this);
             (*it)->addAdjacent(this);
+            this->neighbours.erase(*it);
+            this->addAdjacent(*it);
+
         }
     }
+
+#ifdef _DEBUG
+    if (this->neighbours.size() >= 8) {
+        this->printNeighbourLocs();
+    }
+#endif
 
     return true;
 }
@@ -401,8 +410,8 @@ bool Server::returnArea() {
     set <Server*>::iterator it;
     set <Client*>::iterator cit;
 
-    if (this->parent!=NULL && this->parent->lvl == this->lvl && childCount == 0 ) {
-        Rectangle* curR = (*this->cell.rect.begin());
+    if (this->parent!=NULL && this->parent->lvl == this->lvl && this->childCount == 0 ) {
+        Rectangle* curR = (*this->cell.rect.rbegin());
 
         // Remove self from parent
         this->parent->childCount--;
@@ -419,9 +428,9 @@ bool Server::returnArea() {
         this->parent->checkOwership();
 
         // Remove me from all neighbour lists
-        for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
+        for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
             this->parent->addAdjacent(*it);
-            (*it)->neighbor.erase(this);
+            (*it)->neighbours.erase(this);
         }
 
         // Set lvl be deleted
@@ -436,7 +445,7 @@ bool Server::returnArea() {
  */
 
 bool Server::insideArea(Point* tp) {
-    std::set<Rectangle*>::iterator it;
+    std::list<Rectangle*>::iterator it;
     for (it = this->cell.rect.begin(); it != cell.rect.end();it++) {
         if (inRect(tp,(*it))) {
             return true;
@@ -447,21 +456,44 @@ bool Server::insideArea(Point* tp) {
 
 /*
  *  Tests if the Server t is adjacent and adds to neigbour list
+ *   a  |   b   |   c
+ *      |       |
+ *  ----p1-----p3----
+ *  h   |   t   |   d
+ *      |       |
+ *  ----p4-----p2----
+ *  g   |   f   |   e
+ *      |       |
  */
 
 void Server::addAdjacent(Server* t) {
-    std::set<Rectangle*>::iterator it;
-    Rectangle* curRect;
+    std::list<Rectangle*>::iterator rit;
+    Rectangle* tRect;
+    bool neigh = false;
 
-    for (it = this->cell.rect.begin(); it != cell.rect.end();it++) {
-        curRect = (*it);
-        if (this->insideArea(&curRect->topLeft) || this->insideArea(&curRect->botRight) ||
-                this->insideArea(new Point(curRect->topLeft.x(),curRect->botRight.y())) ||
-                this->insideArea(new Point(curRect->botRight.x(),curRect->topLeft.y()))) {
-            this->neighbor.insert(t);
-            t->neighbor.insert(this);
+    if (this == t) {
+        return;
+    }
+
+    Point *p3, *p4;
+    for (rit = t->cell.rect.begin(); rit != t->cell.rect.end(); rit++) {
+        tRect = (*rit);
+        p3 = new Point(tRect->botRight.x(),tRect->topLeft.y());
+        p4 = new Point(tRect->topLeft.x(), tRect->botRight.y());
+
+        if (this->insideArea(&tRect->topLeft) || this->insideArea(&tRect->botRight)) {
+            neigh = true;
             break;
         }
+        if (this->insideArea(p3) || this->insideArea(p4)) {
+            neigh = true;
+            break;
+        }
+    }
+
+    if (neigh) {
+        this->neighbours.insert(t);
+        t->neighbours.insert(this);
     }
 }
 
@@ -473,7 +505,7 @@ void Server::ownership(Client* c) {
     }
 
     set <Server*>::iterator it;
-    for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
         if ((*it)->insideArea(&c->loc)) {
             found = true;
             (*it)->myClients.insert(c);
@@ -500,7 +532,7 @@ void Server::checkOwership() {
 void Server::printNeighbourLocs(){
     set <Server*>::iterator it;
     printf("My loc (%g,%g)\n",this->loc.x(),this->loc.y());
-    for(it = this->neighbor.begin(); it != this->neighbor.end(); it++) {
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
         printf("N's loc (%g,%g)\n",(*it)->loc.x(),(*it)->loc.y());
     }
 }

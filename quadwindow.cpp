@@ -35,14 +35,14 @@ QuadWindow::QuadWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::QuadWind
     updateTimer = new QTimer();
     updateTimer->setInterval(50);
     connect(updateTimer, SIGNAL(timeout()), this, SLOT(clientUpdate()));
-    connect(updateTimer, SIGNAL(timeout()), this, SLOT(handleAreas()));
+    connect(updateTimer, SIGNAL(timeout()), this, SLOT(checkLoad()));
     updateTimer->start();
 
     //client add timer
-    clientAddTimer = new QTimer();
-    clientAddTimer->setInterval(2000);
-//    connect(clientAddTimer, SIGNAL(timeout()), this, SLOT(addClient()));
-    clientAddTimer->start();
+    loadTimer = new QTimer();
+    loadTimer->setInterval(500);
+//    connect(loadTimer, SIGNAL(timeout()), this, SLOT(checkLoad()));
+    loadTimer->start();
 }
 
 QuadWindow::~QuadWindow()
@@ -57,7 +57,7 @@ void QuadWindow::paintEvent(QPaintEvent*) {
 
     set <Client*>::iterator it;
     set <Server*>::iterator sit;
-    std::set<Rectangle*>::iterator rit;
+    std::list<Rectangle*>::iterator rit;
 
     QPainter painter(this);
     // Pen
@@ -125,7 +125,7 @@ void QuadWindow::addClient() {
     }
 
     if (clientCount >=6) {
-        clientAddTimer->stop();
+        loadTimer->stop();
     }
 
 }
@@ -168,7 +168,7 @@ void QuadWindow::clientUpdate() {
     update();
 }
 
-void QuadWindow::handleAreas() {
+void QuadWindow::checkLoad() {
     set <Server*>::iterator sit;
     Server* curServ;
 
@@ -181,12 +181,6 @@ void QuadWindow::handleAreas() {
                 break;
             }
         }
-//        if (servers[s]->underLoaded()) {
-//            if (servers[s]->returnArea()) {
-//                this->remove(servers[s]);
-//                break;
-//            }
-//        }
 
         if (curServ->isLoaded() && servers.size() <16) {
             Server* newServ = new Server();

@@ -2,6 +2,7 @@
 #define SERVER_H
 
 #include <set>
+#include <list>
 #include "point.h"
 #include "client.h"
 
@@ -55,7 +56,7 @@ public:
 struct Cell {
     int n;
     Vertex* origin;             // pointer to origin of polygon Assume counter clockwise sequence
-    std::set<Rectangle*> rect;  // A Set of point Rectangle objects each defining a rectangle
+    std::list<Rectangle*> rect;  // A Set of point Rectangle objects each defining a rectangle
 };
 
 class Server
@@ -104,7 +105,7 @@ public:
     Cell cell;
     Server* parent;
     int childCount;
-    std::set<Server*> neighbor;
+    std::set<Server*> neighbours;
     std::set<Client*> myClients;
 
 
