@@ -331,7 +331,7 @@ bool Server::merge() {
 #ifdef _DEBUG
     if (this->master) {
         if (!(newR->topLeft.equal(Point(0,0)) && newR->botRight.equal(Point(500,500)))) {
-            printf("bug");
+            printf("Master bug");
         }
     }
 #endif
@@ -386,19 +386,19 @@ bool Server::transfer(Server *t) {
 
     // test all neighbours possible adjacent
     set <Server*>::iterator it;
-    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+    set <Server*> tmpNeig = this->neighbours;
+    for(it = tmpNeig.begin(); it != tmpNeig.end(); it++) {
         if ((*it)!=t) {
             t->addAdjacent(*it);
             (*it)->neighbours.erase(this);
             (*it)->addAdjacent(this);
             this->neighbours.erase(*it);
             this->addAdjacent(*it);
-
         }
     }
 
 #ifdef _DEBUG
-    if (this->neighbours.size() >= 8) {
+    if (this->neighbours.size() > 8) {
         this->printNeighbourLocs();
     }
 #endif
@@ -481,14 +481,12 @@ void Server::addAdjacent(Server* t) {
         p3 = new Point(tRect->botRight.x(),tRect->topLeft.y());
         p4 = new Point(tRect->topLeft.x(), tRect->botRight.y());
 
-        if (this->insideArea(&tRect->topLeft) || this->insideArea(&tRect->botRight)) {
+        if (this->insideArea(&tRect->topLeft) || this->insideArea(&tRect->botRight) ||
+                this->insideArea(p3) || this->insideArea(p4)) {
             neigh = true;
             break;
         }
-        if (this->insideArea(p3) || this->insideArea(p4)) {
-            neigh = true;
-            break;
-        }
+
     }
 
     if (neigh) {
@@ -512,10 +510,11 @@ void Server::ownership(Client* c) {
             this->myClients.erase(c);
         }
     }
-
+#ifdef _DEBUG
     if (!found) {
-        printf("bug");
+        printf("Client bug");
     }
+#endif
 }
 
 
