@@ -69,40 +69,16 @@ QPoint VoroWindow::pointToQp(Point p) {
 
 
 void VoroWindow::setup() {
+    std::vector<Point> p;
     // Insert first server
     servers[sCount] = new Server(150,150);
+    p.push_back(Point(400,0));
+    p.push_back(Point(0,0));
+    p.push_back(Point(200,200));
+    p.push_back(Point(400,400));
+    p.push_back(Point(0,400));
 
-    // Construct cell ccw and assign cell to 1st server
-    servers[sCount]->updateCell(Point(0,0));
-    servers[sCount]->updateCell(Point(400,0));
-    servers[sCount]->updateCell(Point(400,400));
-    servers[sCount]->updateCell(Point(0,400));
+    servers[sCount]->GrahamSort(p);
     sCount++;
-//    Point* verts = servers[sCount].vertsToArray();
-
-//    bool ccw = servers[sCount].ccw(verts, 4);
-//    printf("CCW? %d\n",ccw);
-
-
-    servers[sCount] = new Server(100, 160);
-    servers[sCount-1]->refine(servers[sCount]);
-    sCount++;
-
-//    servers[sCount] = new Server(100,300);
-//    for (int i=0;i<sCount-1;i++) {
-//        servers[i]->refine(servers[sCount]);
-//    }
-//    sCount++;
-
-
-
-
-
-
-//    servers[sCount-1].refine(servers[sCount].loc);
-//    sCount++;
-//    servers[sCount-1].refine(servers[sCount].loc);
-//    sCount++;
-
 
 }

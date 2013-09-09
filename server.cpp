@@ -66,15 +66,15 @@ void Server::refine(Server* t) {
 void Server::updateCell(Point a) {
     Vertex* pointer = this->cell.origin;
     Vertex *vNode = new Vertex(a);
-    vNode->nxt = NULL;
+    vNode->next = NULL;
 
     if (pointer == NULL) {
         this->cell.origin = vNode;
     }else{
-        while (pointer->nxt != NULL) {           // Loop till end of list
-            pointer = pointer->nxt;
+        while (pointer->next != NULL) {           // Loop till end of list
+            pointer = pointer->next;
         }
-        pointer->nxt = vNode;                   // Add new vertex
+        pointer->next = vNode;                   // Add new vertex
     }
     this->cell.n++;
 }
@@ -122,7 +122,7 @@ void Server::splitCell(Server* t, Point intersect[]) {
 //            printf("New t vertex (%g,%g)\n",pointer->loc.x(),pointer->loc.y());
         }
         // Point to next vertex
-        pointer = pointer->nxt;
+        pointer = pointer->next;
     }
 }
 
@@ -131,17 +131,17 @@ void Server::findIntercets(Line line, Point tp[]) {
     Line cellLine;
     Vertex* pointer = this->cell.origin;    
 
-    while(pointer->nxt != NULL){
-        cellLine = getLine(pointer->loc,pointer->nxt->loc);       // Get line segment of polygon
+    while(pointer->next != NULL){
+        cellLine = getLine(pointer->loc,pointer->next->loc);       // Get line segment of polygon
 
 //        get_line_intersection(pointer->loc, pointer->nxt->loc, p0, p1,&tp[i]);
 //        printf("Interc (%g,%g) \n", tp[i].x(), tp[i].y());
         tp[i] = intersect(line, cellLine);
-        if (collinear(pointer->loc, tp[i], pointer->nxt->loc)) {
+        if (collinear(pointer->loc, tp[i], pointer->next->loc)) {
             printf("Interc (%g,%g) \n", tp[i].x(), tp[i].y());
             i++;
         }
-        pointer = pointer->nxt;
+        pointer = pointer->next;
     }
 
     if (i<2) {
@@ -152,13 +152,66 @@ void Server::findIntercets(Line line, Point tp[]) {
     }
 }
 
+/*
+ *  Construct a simple polygon by ustilising the sorting step of the Graham scan algorithm.
+ *  Given a array of points, returns a simple ccw polygon
+ *  First select the bottom-leftmost point l then sorts all following points ccw around L
+ */
+
+void Server::GrahamSort(std::vector<Point> p) {
+    int lpos = 0;
+    Point l = p[lpos];
+    Point tmp, p1, p2;
+
+    // Find bottom-leftmost point
+    for (unsigned int i=1;i<p.size();i++) {
+        if (p[i].y() <= l.y()) {         // First maximum y
+            if (p[i].x() <= l.x()) {     // Second mininum x
+                l = p[i];
+                lpos = i;
+            }
+        }
+    }
+
+    // Remove l from vector p
+    p.erase(p.begin()+lpos);
+
+    this->cell.origin = new Vertex(l);
+    this->cell.n++;
+    Vertex* pointer = this->cell.origin;
+
+    unsigned i;
+    // Sort
+    for (i = 0;i <p.size()-1;i++) {
+        for(unsigned j = i+1; j<p.size(); j++) {
+            bool isCcw = ccw(l, p[i], p[j]);
+            if (!isCcw){     // If not ccw, swap so that it is counter clock wise;
+                tmp = p[i];
+                p[i] = p[j];
+                p[j] = tmp;
+            }
+        }
+        pointer->next = new Vertex(p[i]);
+        this->cell.n++;
+        pointer = pointer->next;
+    }
+    pointer->next = new Vertex(p[i]);
+    this->cell.n++;
+}
+
+void Server::JarvisMarch(std::vector<Point> p){
+
+}
+
+
+
 void Server::vertsToArray(Point arr[]) {
     int i =0;
     Vertex* pointer = this->cell.origin;
 
     while (pointer != NULL) {
         arr[i] = pointer->loc;
-        pointer = pointer->nxt;
+        pointer = pointer->next;
         i++;
     }
 }
@@ -220,6 +273,17 @@ bool ccw(Point p[], int n) {
         sum += (p[i+1].x()-p[i].x())*(p[i+1].y()+p[i].y());
     }
     return sum <=0;
+}
+
+/*
+ *  Determines if the tree points p1(a,b), p2(c,d) p3(e,f) are ccw, by looking at the slop of
+ *  line (a,b)(c,d) vs line (a,b)(e,f)
+ *  ccw <=> (f - b)(c - a)<(d - b)(e - a)
+ *  **Ref: J. Erickson, “Lecture: Convex Hulls,” 2008.
+ *  www.cs.uiuc.edu/~jeffe/teaching/compgeom/notes/01-convexhull.pdf
+ */
+bool ccw(Point p1, Point p2, Point p3) {
+    return ((p3.y() - p1.y())*(p2.x() - p1.x())) < ((p2.y() - p1.y())*(p3.x() - p1.x()));
 }
 
 bool inRect(Point* tp, Rectangle* r) {

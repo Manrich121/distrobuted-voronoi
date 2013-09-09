@@ -1,8 +1,10 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <set>
-#include <list>
+#include <set>          // std::set
+#include <list>         // std::list
+#include <vector>       // std::vector
+#include <algorithm>    // std::sort
 #include "point.h"
 #include "client.h"
 
@@ -27,7 +29,7 @@
  *
  *      QuadTree:
  *      - int n => The index of Rectangles owned by the current server
- *      - rect[4] => array of rectangle structs
+ *      - rect => a List of Rectangles
  *  - neighbor => stdlib set of neighbours of the current server
  ******************************************************************************/
 
@@ -35,11 +37,12 @@ class Vertex {
 public:
     Vertex(Point a){
         loc = a;
-        nxt = NULL;
+        next = NULL;
     }
 
     Point loc;
-    Vertex* nxt;            // Pointer to next vertex in polygon
+    Vertex* next;            // Pointer to next vertex in polygon
+    Vertex* prev;
 };
 
 class Rectangle {
@@ -74,6 +77,9 @@ public:
     /**********************
      *  Distributed Voronoi
      **********************/
+    void GrahamSort(std::vector<Point> p);
+    void JarvisMarch(std::vector<Point> p);
+
     void refine(Server *t);     // calculate the new cell after intercection of the halfspace between
                                 // the current server and new point
     void updateCell(Point a);
@@ -115,6 +121,7 @@ public:
 };
 
 bool ccw(Point p[], int n);
+bool ccw(Point p1, Point p2, Point p3);
 bool inRect(Point* tp, Rectangle r);
 
 #endif // SERVER_H
