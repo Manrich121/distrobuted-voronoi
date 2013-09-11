@@ -56,7 +56,7 @@ void QuadWindow::paintEvent(QPaintEvent*) {
     std::string s;
 
     set <Client*>::iterator it;
-    set <Server*>::iterator sit;
+    vector <Server*>::iterator sit;
     std::list<Rectangle*>::iterator rit;
 
     QPainter painter(this);
@@ -109,7 +109,7 @@ void QuadWindow::setup() {
     clientCount++;
     curServ->myClients.insert(new Client(curServ->loc,1000));
     clientCount++;
-    servers.insert(curServ);
+    servers.push_back(curServ);
 }
 
 
@@ -131,7 +131,7 @@ void QuadWindow::addClient() {
 }
 
 void QuadWindow::removeClient() {
-    set <Server*>::iterator sit;
+    vector <Server*>::iterator sit;
     Server* curServ;
     std::string s;
     std::stringstream out;
@@ -150,7 +150,7 @@ void QuadWindow::removeClient() {
 
 
 void QuadWindow::clientUpdate() {
-    set <Server*>::iterator sit;
+    vector <Server*>::iterator sit;
     set <Client*>::iterator it;
     set <Client*>::iterator tmp;
 
@@ -169,7 +169,7 @@ void QuadWindow::clientUpdate() {
 }
 
 void QuadWindow::checkLoad() {
-    set <Server*>::iterator sit;
+    vector <Server*>::iterator sit;
     Server* curServ;
 
     for (sit = this->servers.begin(); sit != this->servers.end(); sit++) {
@@ -177,7 +177,7 @@ void QuadWindow::checkLoad() {
 
         if (curServ->underLoaded()) {
             if (curServ->returnArea()) {
-                servers.erase((curServ));
+                servers.erase(sit);
                 break;
             }
         }
@@ -185,7 +185,7 @@ void QuadWindow::checkLoad() {
         if (curServ->isLoaded() && servers.size() <16) {
             Server* newServ = new Server();
             if (curServ->transfer(newServ)) {
-                servers.insert(newServ);
+                servers.push_back(newServ);
                 break;
             }
         }

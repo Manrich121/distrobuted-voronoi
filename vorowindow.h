@@ -1,6 +1,8 @@
 #ifndef VOROWINDOW_H
 #define VOROWINDOW_H
 
+#define WIDTH 600
+
 #include <QMainWindow>
 #include <QtGui>
 #include "server.h"
@@ -20,10 +22,14 @@ public:
     QPoint pointToQp(Point p);
     void setup();
     
+private slots:
+    void on_pushButton_clicked();
+
 private:
     Ui::VoroWindow *ui;
-    Server* servers[5];
+    std::vector<Server*> servers;
     int sCount;
+    QColor* c[10];
 };
 
 #endif // VOROWINDOW_H

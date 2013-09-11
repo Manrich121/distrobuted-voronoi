@@ -41,7 +41,7 @@ double grad(Point a, Point b);
 double recip(double m);
 Line getLine(Point a, Point b);
 Line getPerpendic(Line line, Point at);
-Point intersect(Line line1, Line line2);
+Point* intersect(Line line1, Line line2);
 bool get_line_intersection(Point p0, Point p1, Point p2, Point p3, Point* inter);
 
 #endif // POINT_H

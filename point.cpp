@@ -95,7 +95,10 @@ double recip(double m) {
     return -1/m;
 }
 
-// Calculates the equation of the line between two lines
+/*
+ *  Calculates the equation of the line between two lines
+ *  Ay + Bx = C
+ */
 Line getLine(Point v, Point w) {
     Line line;
     line.a = 1.0;                       // A is always chose as one
@@ -111,26 +114,42 @@ Line getLine(Point v, Point w) {
 
 Line getPerpendic(Line line, Point at) {
     Line newLine;
-    newLine.a = 1.0;                    // A is agian one
-    newLine.b = -1*recip(-1*line.b);    // Find the reciprocal of line1
-    newLine.c = at.y() + newLine.b*at.x();       // Calculate the equation through the point 'at'
-
+    // if vertical newLine => horizontal
+    if (line.a == 0){       // y=0; x=c
+        newLine.a = 1;
+        newLine.b = 0;
+        newLine.c = at.y();
+    }else{
+        if (line.b == 0) {  // x=0; y=c
+            newLine.a = 0;
+            newLine.b = 1;
+            newLine.c = at.x();
+        }else{
+            newLine.a = 1.0;
+            newLine.b = -1*recip(-1*line.b);    // Find the reciprocal of line
+            newLine.c = at.y() + newLine.b*at.x();       // Calculate the equation through the point 'at'
+        }
+    }
     return newLine;
 }
 
-// Calculate the intersection of two lines
-// A1x + B1y = C1
-// A2x + B2y = C2
-Point intersect(Line line1, Line line2) {
-    double det = line1.a*line2.b - line2.a*line1.b;     // Calculate the determinant
+/*  Calculate the intersection of two lines
+*   A1y + B1x = C1
+*   A2y + B2x = C2
+*
+*   Returns a NULL pointer if the two lines are parallel
+*/
+
+Point* intersect(Line line1, Line line2) {
+    double det = line1.b*line2.a - line2.b*line1.a;     // Calculate the determinant
     double x;
     double y;
     if (det == 0){                      // Lines are parallel
-        x = NAN;
-        y = NAN;
+        return NULL;
     }else{                              // Calculate intersection point
-        y = (line2.b*line1.c - line1.b*line2.c)/det;
-        x = (line1.a*line2.c - line2.a*line1.c)/det;
+
+        x = (line2.a*line1.c - line1.a*line2.c)/det;
+        y = (line1.b*line2.c - line2.b*line1.c)/det;
 
         if(x==0.0) {
             x = 0.0;
@@ -140,7 +159,7 @@ Point intersect(Line line1, Line line2) {
         }
     }
 
-    return Point(x,y);
+    return new Point(x,y);
 }
 
 

@@ -58,6 +58,7 @@ public:
 
 struct Cell {
     int n;
+    double rmax;
     Vertex* origin;             // pointer to origin of polygon Assume counter clockwise sequence
     std::list<Rectangle*> rect;  // A Set of point Rectangle objects each defining a rectangle
 };
@@ -71,23 +72,22 @@ public:
     void printNeighbourLocs();
     bool isLoaded();
     bool underLoaded();
-    void checkOwership();
-
 
     /**********************
      *  Distributed Voronoi
      **********************/
-    void GrahamSort(std::vector<Point> p);
-    void JarvisMarch(std::vector<Point> p);
+    void GrahamSort(std::vector<Point> points);
+    void vertsToVector(std::vector<Point> *v);
+    void findIntersects(Line line, std::vector<Point> *ip);
+    void checkNeighbours();
+    bool isNeigh(Server* t);
 
     void refine(Server *t);     // calculate the new cell after intercection of the halfspace between
                                 // the current server and new point
-    void updateCell(Point a);
-    void splitCell(Server *t, Point intersect[]);
-    void findIntercets(Line line, Point tp[]);
-    void vertsToArray(Point arr[]);
 
     // Polygon functions
+    void addVertex(Point a);
+    void clearCell();
     bool pointInPolygon(Point p);
 
     /**********************
@@ -103,7 +103,7 @@ public:
     bool insideArea(Point* tp);  // Determines if the test point tp is inside the area of current server
     void addAdjacent(Server* t); // Determines if the Server t, and all its neighbours is adjacent to this, thus is a neighbour
     void ownership(Client* c);
-
+    void checkOwership();
 
 // Params
     Point loc;

@@ -38,7 +38,7 @@ private:
     Ui::QuadWindow *ui;
     QTimer* updateTimer;
     QTimer* loadTimer;
-    std::set<Server*> servers;
+    std::vector<Server*> servers;
     QColor* c[16];
 };
 

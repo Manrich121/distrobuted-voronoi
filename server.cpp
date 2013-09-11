@@ -37,182 +37,219 @@ bool Server::underLoaded() {
  ***********************************/
 
 void Server::refine(Server* t) {
-// Redefine take a new point to be evaluated and calculates the new Cell
-    Point mid = middle(this->loc, t->loc);        // Calulate midpoint
+    std::vector<Point> iPoints;
+    std::vector<Point> tPoints;
+    std::vector<Point> myPoints;
+    if (this->isNeigh(t)) {
+        this->neighbours.insert(t);
 
-    printf("Mid X: %g Y:%g\n",mid.x(),mid.y());
+        // Redefine take a new point to be evaluated and calculates the new Cell
+        Point mid = middle(this->loc, t->loc);        // Calulate midpoint
 
-    // Test insidePolygon()
-    if (this->pointInPolygon(mid)){
-// TODO Insert t into this->neighbourList
-        printf("Inside polygon? YES\n");
-    }else{
-         printf("Inside polygon? NO\n");
-         return;
-    }
+        printf("Mid X: %g Y:%g\n",mid.x(),mid.y());
 
-    Line line = getLine(this->loc, t->loc);
-    printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t->loc.x(),t->loc.y(),line.a,line.b,line.c);
+        Line line = getLine(this->loc, t->loc);
 
-    line = getPerpendic(line, mid);
-    printf("PLine from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t->loc.x(),t->loc.y(),line.a,line.b,line.c);
+        printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t->loc.x(),t->loc.y(),line.a,line.b,line.c);
 
-    Point intersects[2];
-    this->findIntercets(line,intersects);
-    this->splitCell(t, intersects);
-}
+        line = getPerpendic(line, mid);
 
-// Addes the two new  Vertexes
-void Server::updateCell(Point a) {
-    Vertex* pointer = this->cell.origin;
-    Vertex *vNode = new Vertex(a);
-    vNode->next = NULL;
+        printf("PLine from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t->loc.x(),t->loc.y(),line.a,line.b,line.c);
 
-    if (pointer == NULL) {
-        this->cell.origin = vNode;
-    }else{
-        while (pointer->next != NULL) {           // Loop till end of list
+        this->findIntersects(line, &iPoints);
+
+        if (ccw(this->loc, iPoints[0], iPoints[1])){
+            Point tmp = iPoints[0];
+            iPoints[0] = iPoints[1];
+            iPoints[1] = tmp;
+        }
+        tPoints.push_back(iPoints[0]);
+        tPoints.push_back(iPoints[1]);
+        myPoints.push_back(iPoints[0]);
+        myPoints.push_back(iPoints[1]);
+
+        // Loop though this.cell and transfer points to myPoints and tPoints
+        Vertex* pointer = this->cell.origin;
+        bool iamLeft = isLeft(this->loc, iPoints[0], iPoints[1]);
+        while (pointer != NULL) {
+            if (iamLeft && isLeft(pointer->loc, iPoints[0], iPoints[1])) {
+                myPoints.push_back(pointer->loc);
+            }else{
+                tPoints.push_back(pointer->loc);
+            }
             pointer = pointer->next;
         }
-        pointer->next = vNode;                   // Add new vertex
+
+        this->cell.origin = NULL;
+        this->cell.n = 0;
+//        this->clearCell();
+        this->GrahamSort(myPoints);
+
+
+//        t->vertsToVector(&tPoints);
+//        t->cell.origin = NULL;
+//        t->cell.n = 0;
+        t->GrahamSort(tPoints);
+    }
+}
+
+/*
+ *  Adds a Vertex to this.cell incrementing cell.n and calculate cell.rmax as the maximum distance
+ *  from this.loc and the new Vertex
+ */
+void Server::addVertex(Point a) {
+    Vertex* pointer = this->cell.origin;
+    Vertex* vNode = new Vertex(a);
+    vNode->next = NULL;
+
+    if (pointer == NULL) {          // Cell not yet init
+        this->cell.origin = vNode;
+        this->cell.origin->prev = NULL;
+        this->cell.n = 0;
+        this->cell.rmax = 0;
+    }else{
+        if (pointer->prev == NULL) {    // Cell only contains one Vertex=origin
+            pointer->next = vNode;      // Add new Vertex
+            vNode->prev = pointer;
+        }else{
+            pointer = pointer->prev;    // Jump to end of polygon
+            pointer->next = vNode;      // Add new Vertex
+            vNode->prev = pointer;
+        }
+        this->cell.origin->prev = vNode;
     }
     this->cell.n++;
+
+    // Recalc rmax
+    double newR = this->loc.dist(a);    // calculate radius to new point
+    if (newR > this->cell.rmax) {
+        this->cell.rmax = newR;
+    }
 }
 
-void Server::splitCell(Server* t, Point intersect[]) {
-    Cell oldCell = this->cell;
-    Vertex* pointer = oldCell.origin;
-    bool swapped = false;
-    // Determine if s i left of intersect-line
-    bool Left = isLeft(this->loc, intersect[0], intersect[1]);
+void Server::clearCell(){
+    Vertex* pointer = this->cell.origin->prev;
+    Vertex* tp = pointer;
 
-    // Clear s.cell
-    this->cell.n=0;
-    this->cell.origin = NULL;
-
-    // insert the intersects head first
-    if (Left) {
-        t->updateCell(intersect[1]);
-        t->updateCell(intersect[0]);
-    }else{
-        t->updateCell(intersect[0]);
-        t->updateCell(intersect[1]);
+    while(pointer != NULL) {
+        delete pointer;
+        pointer = tp->prev;
+        tp = pointer;
     }
+    delete this->cell.origin;
+    this->cell.origin = NULL;
+}
+
+void Server::checkNeighbours() {
+    set <Server*>::iterator it;
+    set <Server*> tmpNeig = this->neighbours;
+    for(it = tmpNeig.begin(); it != tmpNeig.end(); it++) {
+        if (!this->isNeigh(*it)) {              // If not neigbour anymore
+            this->neighbours.erase(*it);
+            (*it)->neighbours.erase(this);
+        }
+    }
+}
+
+bool Server::isNeigh(Server* t) {
+    Point mid = middle(this->loc, t->loc);        // Calulate midpoint
+    if (this->pointInPolygon(mid)) {
+        return true;
+    }
+    double midDist = mid.dist(t->loc);
+    Vertex* pointer = this->cell.origin;
 
     while (pointer != NULL) {
-        // Test if the current point is on same side as s
-        if (Left == isLeft(pointer->loc, intersect[0], intersect[1])) {
-            this->updateCell(pointer->loc);
-
-//            printf("New s vertex (%g,%g)\n",pointer->loc.x(),pointer->loc.y());
-
-        }else{
-            // Check to see if it will be the first swap of server
-            if (!swapped) {
-                if (Left) {
-                    this->updateCell(intersect[0]);
-                    this->updateCell(intersect[1]);
-                }else{
-                    this->updateCell(intersect[1]);
-                    this->updateCell(intersect[0]);
-                }
-                swapped = true;
-            }
-            t->updateCell(pointer->loc);
-//            printf("New t vertex (%g,%g)\n",pointer->loc.x(),pointer->loc.y());
+        if (pointer->loc.dist(t->loc) <= midDist) {
+            return true;
         }
-        // Point to next vertex
         pointer = pointer->next;
     }
+
+    return false;
 }
 
-void Server::findIntercets(Line line, Point tp[]) {
-    int i = 0;
+void Server::findIntersects(Line line, std::vector<Point> *ip) {
     Line cellLine;
-    Vertex* pointer = this->cell.origin;    
+    Vertex* pointer = this->cell.origin;
+    Point* tp;
 
-    while(pointer->next != NULL){
-        cellLine = getLine(pointer->loc,pointer->next->loc);       // Get line segment of polygon
-
-//        get_line_intersection(pointer->loc, pointer->nxt->loc, p0, p1,&tp[i]);
-//        printf("Interc (%g,%g) \n", tp[i].x(), tp[i].y());
-        tp[i] = intersect(line, cellLine);
-        if (collinear(pointer->loc, tp[i], pointer->next->loc)) {
-            printf("Interc (%g,%g) \n", tp[i].x(), tp[i].y());
-            i++;
+    while(pointer->next != NULL){                   // While not at end of polygon
+        cellLine = getLine(pointer->loc, pointer->next->loc);
+        tp = intersect(line, cellLine);
+        if (tp == NULL ) {
+            pointer = pointer->next;
+            continue;
+        }
+        // (a.dist(b) <= a.dist(c) && c.dist(b) <= c.dist(a))
+        if (pointer->loc.dist(*tp) <= pointer->loc.dist(pointer->next->loc) &&
+                pointer->next->loc.dist(*tp) <= pointer->next->loc.dist(pointer->loc)) {
+            if (ip->size() <2) {
+                ip->push_back(*tp);
+            }else{
+                return;
+            }
         }
         pointer = pointer->next;
     }
-
-    if (i<2) {
-        // Test last cell line segment
-        cellLine = getLine(pointer->loc,this->cell.origin->loc);       // Get line segment of polygon
-        tp[i] = intersect(line, cellLine);
-        printf("Last Interc (%g,%g)\n", tp[i].x(), tp[i].y());
+    if (ip->size() <2) {
+        // Last line segment
+        cellLine = getLine(pointer->loc,this->cell.origin->loc);
+        tp = intersect(line, cellLine);
+        if (tp != NULL) {
+            if (pointer->loc.dist(*tp) <= pointer->loc.dist(this->cell.origin->loc) &&
+                    this->cell.origin->loc.dist(*tp) <= this->cell.origin->loc.dist(pointer->loc)) {
+                ip->push_back(*tp);
+            }
+        }
     }
 }
 
 /*
  *  Construct a simple polygon by ustilising the sorting step of the Graham scan algorithm.
- *  Given a array of points, returns a simple ccw polygon
+ *  Given a array of points, and sets this.cell equal to a simple ccw polygon
  *  First select the bottom-leftmost point l then sorts all following points ccw around L
+ *  **Ref:  J. Erickson, “Lecture: Convex Hulls,” 2008.
+ *          Available: www.cs.uiuc.edu/jeffe/teaching/compgeom/notes/01-convexhull.pdf
  */
-
-void Server::GrahamSort(std::vector<Point> p) {
+void Server::GrahamSort(std::vector<Point> points) {
     int lpos = 0;
-    Point l = p[lpos];
+    Point l = points[lpos];
     Point tmp, p1, p2;
 
-    // Find bottom-leftmost point
-    for (unsigned int i=1;i<p.size();i++) {
-        if (p[i].y() <= l.y()) {         // First maximum y
-            if (p[i].x() <= l.x()) {     // Second mininum x
-                l = p[i];
-                lpos = i;
-            }
+    // Find top-leftmost point
+    for (unsigned int i=1;i<points.size();i++) {
+        if (points[i].x() <= l.x()) {     // Second mininum x
+            l = points[i];
+            lpos = i;
         }
     }
+    // Remove l from vector points
+    points.erase(points.begin()+lpos);
 
-    // Remove l from vector p
-    p.erase(p.begin()+lpos);
-
-    this->cell.origin = new Vertex(l);
-    this->cell.n++;
-    Vertex* pointer = this->cell.origin;
+    this->addVertex(l);
 
     unsigned i;
     // Sort
-    for (i = 0;i <p.size()-1;i++) {
-        for(unsigned j = i+1; j<p.size(); j++) {
-            bool isCcw = ccw(l, p[i], p[j]);
-            if (!isCcw){     // If not ccw, swap so that it is counter clock wise;
-                tmp = p[i];
-                p[i] = p[j];
-                p[j] = tmp;
+    for (i = 0;i <points.size()-1;i++) {
+        for(unsigned j = i+1; j<points.size(); j++) {
+            if (!ccw(l, points[i], points[j])){     // If not ccw, swap so that it is counter clock wise;
+                tmp = points[i];
+                points[i] = points[j];
+                points[j] = tmp;
             }
         }
-        pointer->next = new Vertex(p[i]);
-        this->cell.n++;
-        pointer = pointer->next;
+        this->addVertex(points[i]);
     }
-    pointer->next = new Vertex(p[i]);
-    this->cell.n++;
+    this->addVertex(points[i]);
 }
 
-void Server::JarvisMarch(std::vector<Point> p){
-
-}
-
-
-
-void Server::vertsToArray(Point arr[]) {
-    int i =0;
+void Server::vertsToVector(std::vector<Point> *v) {
     Vertex* pointer = this->cell.origin;
 
     while (pointer != NULL) {
-        arr[i] = pointer->loc;
+        v->push_back(pointer->loc);
         pointer = pointer->next;
-        i++;
     }
 }
 
@@ -242,8 +279,8 @@ bool Server::pointInPolygon(Point p) {
     int i, j = polySides-1;
     bool oddNodes = false;
 
-    Point verts[polySides];
-    vertsToArray(verts);
+    std::vector<Point> verts;
+    vertsToVector(&verts);
 
     for (i=0; i<polySides; i++) {
         polyYi = verts[i].y();
