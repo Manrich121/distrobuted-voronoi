@@ -26,6 +26,7 @@ public:
     double dist(Point other);
     Point operator+(Point b);
     Point operator-(Point b);
+    bool operator ==(Point p);
     void move(double a, double b);
     bool equal(Point p);
 

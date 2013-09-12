@@ -84,11 +84,14 @@ public:
 
     void refine(Server *t);     // calculate the new cell after intercection of the halfspace between
                                 // the current server and new point
+    void transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoints);
 
     // Polygon functions
     void addVertex(Point a);
     void clearCell();
+    void deleteVertex(Vertex* v);
     bool pointInPolygon(Point p);
+    std::vector<Point> *RemoveDup(std::vector<Point> v);
 
     /**********************
      *  QuadTree

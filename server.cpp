@@ -39,32 +39,54 @@ bool Server::underLoaded() {
 void Server::refine(Server* t) {
     std::vector<Point> iPoints;
     std::vector<Point> tPoints;
-    std::vector<Point> myPoints;
+
     if (this->isNeigh(t)) {
-        this->neighbours.insert(t);
+
 
         // Redefine take a new point to be evaluated and calculates the new Cell
         Point mid = middle(this->loc, t->loc);        // Calulate midpoint
-
-        printf("Mid X: %g Y:%g\n",mid.x(),mid.y());
-
         Line line = getLine(this->loc, t->loc);
-
-        printf("Line from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t->loc.x(),t->loc.y(),line.a,line.b,line.c);
-
         line = getPerpendic(line, mid);
-
-        printf("PLine from (%g,%g) to (%g,%g) = %gy + %gx = %g\n",this->loc.x(),this->loc.y(),t->loc.x(),t->loc.y(),line.a,line.b,line.c);
-
         this->findIntersects(line, &iPoints);
 
+        this->transferPoints(iPoints, &tPoints);
+
+        set <Server*>::iterator it;
+        set <Server*> tmpNeig = this->neighbours;
+        for(it = tmpNeig.begin(); it != tmpNeig.end(); it++) {
+            Server* curServ = (*it);
+            if (curServ->isNeigh(t)) {
+                iPoints.clear();
+                curServ->neighbours.insert(t);
+                t->neighbours.insert(curServ);
+
+                mid = middle(curServ->loc, t->loc);        // Calulate midpoint
+                Line line = getLine(curServ->loc, t->loc);
+                line = getPerpendic(line, mid);
+                curServ->findIntersects(line, &iPoints);
+
+                curServ->transferPoints(iPoints, &tPoints);
+            }
+        }
+
+        this->neighbours.insert(t);
+        t->neighbours.insert(this);
+
+        t->clearCell();
+        t->GrahamSort(tPoints);
+    }
+}
+
+void Server::transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoints) {
+    std::vector<Point> myPoints;
+    if (iPoints.size() == 2){
         if (ccw(this->loc, iPoints[0], iPoints[1])){
             Point tmp = iPoints[0];
             iPoints[0] = iPoints[1];
             iPoints[1] = tmp;
         }
-        tPoints.push_back(iPoints[0]);
-        tPoints.push_back(iPoints[1]);
+        tPoints->push_back(iPoints[0]);
+        tPoints->push_back(iPoints[1]);
         myPoints.push_back(iPoints[0]);
         myPoints.push_back(iPoints[1]);
 
@@ -75,21 +97,13 @@ void Server::refine(Server* t) {
             if (iamLeft && isLeft(pointer->loc, iPoints[0], iPoints[1])) {
                 myPoints.push_back(pointer->loc);
             }else{
-                tPoints.push_back(pointer->loc);
+                tPoints->push_back(pointer->loc);
             }
             pointer = pointer->next;
         }
 
-        this->cell.origin = NULL;
-        this->cell.n = 0;
-//        this->clearCell();
+        this->clearCell();
         this->GrahamSort(myPoints);
-
-
-//        t->vertsToVector(&tPoints);
-//        t->cell.origin = NULL;
-//        t->cell.n = 0;
-        t->GrahamSort(tPoints);
     }
 }
 
@@ -128,16 +142,20 @@ void Server::addVertex(Point a) {
 }
 
 void Server::clearCell(){
-    Vertex* pointer = this->cell.origin->prev;
-    Vertex* tp = pointer;
-
-    while(pointer != NULL) {
-        delete pointer;
-        pointer = tp->prev;
-        tp = pointer;
+    if (this->cell.origin == NULL) {
+        return;
     }
-    delete this->cell.origin;
+    deleteVertex(this->cell.origin);
     this->cell.origin = NULL;
+    this->cell.n = 0;
+}
+
+void Server::deleteVertex(Vertex* v) {
+    if (v->next == NULL) {
+        delete(v);
+    }else{
+        deleteVertex(v->next);
+    }
 }
 
 void Server::checkNeighbours() {
@@ -153,20 +171,21 @@ void Server::checkNeighbours() {
 
 bool Server::isNeigh(Server* t) {
     Point mid = middle(this->loc, t->loc);        // Calulate midpoint
-    if (this->pointInPolygon(mid)) {
-        return true;
-    }
-    double midDist = mid.dist(t->loc);
-    Vertex* pointer = this->cell.origin;
+//    if (this->pointInPolygon(mid)) {
+//        return true;
+//    }
+//    double midDist = mid.dist(t->loc);
+//    Vertex* pointer = this->cell.origin;
 
-    while (pointer != NULL) {
-        if (pointer->loc.dist(t->loc) <= midDist) {
-            return true;
-        }
-        pointer = pointer->next;
-    }
+//    while (pointer != NULL) {
+//        if (pointer->loc.dist(t->loc) <= midDist) {
+//            return true;
+//        }
+//        pointer = pointer->next;
+//    }
 
-    return false;
+//    return false;
+    return (this->loc.dist(mid) <= this->cell.rmax);
 }
 
 void Server::findIntersects(Line line, std::vector<Point> *ip) {
@@ -233,6 +252,11 @@ void Server::GrahamSort(std::vector<Point> points) {
     // Sort
     for (i = 0;i <points.size()-1;i++) {
         for(unsigned j = i+1; j<points.size(); j++) {
+            p1 = points[i];
+            p2 = points[j];
+            if (p1.equal(p2)){
+                continue;
+            }
             if (!ccw(l, points[i], points[j])){     // If not ccw, swap so that it is counter clock wise;
                 tmp = points[i];
                 points[i] = points[j];
@@ -243,6 +267,7 @@ void Server::GrahamSort(std::vector<Point> points) {
     }
     this->addVertex(points[i]);
 }
+
 
 void Server::vertsToVector(std::vector<Point> *v) {
     Vertex* pointer = this->cell.origin;

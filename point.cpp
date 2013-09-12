@@ -38,6 +38,11 @@ Point Point::operator-(Point b)
     return Point(xval - b.xval, yval - b.yval);
 }
 
+bool Point::operator ==(Point p)
+{
+    return (this->x() == p.x()) && (this->y() == p.y());
+}
+
 // Move the existing point.
 void Point::move(double a, double b)
 {
@@ -103,11 +108,18 @@ Line getLine(Point v, Point w) {
     Line line;
     line.a = 1.0;                       // A is always chose as one
     line.b = -1*grad(v,w);              // B is equal to m, the gradiant of the two lines
-    if (line.b == INFINITY || line.b == -INFINITY) {
+    if (line.b == INFINITY || line.b == -INFINITY) { // x1 == x2
         line.a = 0;
         line.b = 1;
+        line.c = v.x();                 // c = x1
+    }else{
+        if (line.b == 0) {              // horizontal line y=c
+            line.c = v.y();
+        }else{
+            line.c =  line.a*v.y() + line.b*v.x();     // C is eqaul to m(-x1) + y1
+        }
     }
-    line.c =  line.a*w.y() + line.b*v.x();     // C is eqaul to m(-x1) + y1
+
 
     return line;
 }
@@ -138,6 +150,8 @@ Line getPerpendic(Line line, Point at) {
 *   A2y + B2x = C2
 *
 *   Returns a NULL pointer if the two lines are parallel
+*   **Ref: backstrom,“AlgorithmTutorials.”
+*   [Online]: http://community.topcoder.com/tc?module=Static&d1=tutorials&d2=geometry2#line_line_intersection
 */
 
 Point* intersect(Line line1, Line line2) {
@@ -161,6 +175,28 @@ Point* intersect(Line line1, Line line2) {
 
     return new Point(x,y);
 }
+
+//Point* intersect(Line line1, Line line2) {
+//    double x;
+//    double y;
+//    if (line1.a == 0){   // x1 = c1
+//        x = line1.c;
+//    }else{
+//        if (line2.a == 0){   // x1 = c1
+//            x = line2.c;
+//        }else{
+//            x = (line1.c - line2.c)/(line1.b - line2.b);
+//        }
+//    }
+
+//    if (line2.b == 0) { // y2 = c2
+//        y = line2.c;
+//    }else{              // y2 = -b2x +c2
+//        y = line2.c-x*line2.b;
+//    }
+
+//    return new Point(x,y);
+//}
 
 
 bool get_line_intersection(Point p0, Point p1, Point p2, Point p3, Point* inter) {

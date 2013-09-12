@@ -75,7 +75,7 @@ QPoint VoroWindow::pointToQp(Point p) {
 void VoroWindow::setup() {
     std::vector<Point> p;
     // Insert first server
-    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
+    servers.push_back(new Server(150,150));
     p.push_back(Point(WIDTH,0));
     p.push_back(Point(WIDTH,WIDTH));
     p.push_back(Point(0,0));
@@ -84,13 +84,14 @@ void VoroWindow::setup() {
     servers[sCount]->GrahamSort(p);
     sCount++;
 
-    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
+    servers.push_back(new Server(300,300));
     servers[sCount-1]->refine(servers.back());
     sCount++;
 
-    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
+    servers.push_back(new Server(300,500));
+
     servers[sCount-1]->refine(servers.back());
-    servers[sCount-2]->refine(servers.back());
+//    servers[sCount-2]->refine(servers.back());
     sCount++;
 
 //    servers.push_back(new Server(350,100));
