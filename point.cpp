@@ -29,11 +29,11 @@ double Point::dist(Point other) {
 }
 
 // Add or subtract two points.
-Point Point::operator+(Point b)
+Point Point::operator +(Point b)
 {
     return Point(xval + b.xval, yval + b.yval);
 }
-Point Point::operator-(Point b)
+Point Point::operator -(Point b)
 {
     return Point(xval - b.xval, yval - b.yval);
 }

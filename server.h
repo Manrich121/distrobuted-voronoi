@@ -7,6 +7,7 @@
 #include <algorithm>    // std::sort
 #include "point.h"
 #include "client.h"
+#include "ConvexHullAlgs.h"
 
 // Defines
 #define MAXCLIENTS 5
@@ -77,6 +78,7 @@ public:
      *  Distributed Voronoi
      **********************/
     void GrahamSort(std::vector<Point> points);
+    void GrahamScan(std::vector<Point> p);
     void vertsToVector(std::vector<Point> *v);
     void findIntersects(Line line, std::vector<Point> *ip);
     void checkNeighbours();
@@ -126,5 +128,6 @@ public:
 bool ccw(Point p[], int n);
 bool ccw(Point p1, Point p2, Point p3);
 bool inRect(Point* tp, Rectangle r);
+void insertIntoVec(std::vector<Point> *v, Point p);
 
 #endif // SERVER_H

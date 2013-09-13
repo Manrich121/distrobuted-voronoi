@@ -17,13 +17,17 @@ SOURCES += main.cpp\
     server.cpp \
     point.cpp \
     quadwindow.cpp \
-    client.cpp
+    client.cpp \
+    ConvexHullAlgs.cpp \
+    Vector.cpp
 
 HEADERS  += vorowindow.h \
     server.h \
     point.h \
     quadwindow.h \
-    client.h
+    client.h \
+    ConvexHullAlgs.h \
+    Vector.h
 
 FORMS    += vorowindow.ui \
     quadwindow.ui

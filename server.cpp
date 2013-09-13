@@ -73,7 +73,8 @@ void Server::refine(Server* t) {
         t->neighbours.insert(this);
 
         t->clearCell();
-        t->GrahamSort(tPoints);
+//        t->GrahamSort(tPoints);
+        t->GrahamScan(tPoints);
     }
 }
 
@@ -103,7 +104,8 @@ void Server::transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoi
         }
 
         this->clearCell();
-        this->GrahamSort(myPoints);
+//        this->GrahamSort(myPoints);
+        this->GrahamScan(myPoints);
     }
 }
 
@@ -123,10 +125,22 @@ void Server::addVertex(Point a) {
         this->cell.rmax = 0;
     }else{
         if (pointer->prev == NULL) {    // Cell only contains one Vertex=origin
+            if (pointer->loc.equal(vNode->loc)) {
+                return;
+            }
             pointer->next = vNode;      // Add new Vertex
             vNode->prev = pointer;
         }else{
             pointer = pointer->prev;    // Jump to end of polygon
+            if (collinear(pointer->prev->loc, pointer->loc, vNode->loc)){
+                pointer->prev->next = vNode;
+                vNode->prev = pointer->prev;
+                delete pointer;
+            }
+            if (pointer->loc.equal(vNode->loc)) {
+                return;
+            }
+
             pointer->next = vNode;      // Add new Vertex
             vNode->prev = pointer;
         }
@@ -254,9 +268,6 @@ void Server::GrahamSort(std::vector<Point> points) {
         for(unsigned j = i+1; j<points.size(); j++) {
             p1 = points[i];
             p2 = points[j];
-            if (p1.equal(p2)){
-                continue;
-            }
             if (!ccw(l, points[i], points[j])){     // If not ccw, swap so that it is counter clock wise;
                 tmp = points[i];
                 points[i] = points[j];
@@ -268,6 +279,23 @@ void Server::GrahamSort(std::vector<Point> points) {
     this->addVertex(points[i]);
 }
 
+void Server::GrahamScan(std::vector<Point> p) {
+    vector<Vector> *points = new vector<Vector>;
+    vector<Vector> *convexHull = new vector<Vector>;
+    float znew = 0.0f;
+    float wnew = 1.0f;
+
+    for (unsigned int i=0; i< p.size();i++) {
+        points->push_back(Vector(p[i].x(),p[i].y(), znew, wnew));
+    }
+
+    if(!ConvexHullAlgs::GrahamsScan(convexHull, points))
+        printf("error computing convex hull\n");
+    for (unsigned int i=0;i<convexHull->size();i++){
+        this->addVertex(Point(convexHull->at(i).x,convexHull->at(i).y));
+    }
+
+}
 
 void Server::vertsToVector(std::vector<Point> *v) {
     Vertex* pointer = this->cell.origin;
@@ -355,6 +383,19 @@ bool inRect(Point* tp, Rectangle* r) {
         }
     }
     return false;
+}
+
+
+void insertIntoVec(std::vector<Point> *v, Point p) {
+    Point tmp;
+    for (unsigned int i=0;i<v->size();i++) {
+        tmp = v->at(i);
+        if (tmp.equal(p)) {
+            return;
+        }
+    }
+
+    v->push_back(p);
 }
 
 /***************************************
@@ -661,3 +702,4 @@ void Server::printNeighbourLocs(){
         printf("N's loc (%g,%g)\n",(*it)->loc.x(),(*it)->loc.y());
     }
 }
+

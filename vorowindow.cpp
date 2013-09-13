@@ -74,25 +74,42 @@ QPoint VoroWindow::pointToQp(Point p) {
 
 void VoroWindow::setup() {
     std::vector<Point> p;
+    vector<Vector> *points = new vector<Vector>;
+    vector<Vector> *convexHull = new vector<Vector>;
+    float znew = 0.0f;
+    float wnew = 1.0f;
+
     // Insert first server
-    servers.push_back(new Server(150,150));
+    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
     p.push_back(Point(WIDTH,0));
     p.push_back(Point(WIDTH,WIDTH));
     p.push_back(Point(0,0));
     p.push_back(Point(0,WIDTH));
+    p.push_back(Point(0,WIDTH/2));
 
-    servers[sCount]->GrahamSort(p);
+//    points->push_back(Vector(600,0,znew,wnew));
+//    points->push_back(Vector(0,0,znew,wnew));
+//    points->push_back(Vector(0,600,znew,wnew));
+//    points->push_back(Vector(600,600,znew,wnew));
+//    points->push_back(Vector(100,600,znew,wnew));
+
+    if(!ConvexHullAlgs::GrahamsScan(convexHull, points))
+        printf("error computing convex hull\n");
+
+    servers[sCount]->GrahamScan(p);
     sCount++;
 
-    servers.push_back(new Server(300,300));
+    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
     servers[sCount-1]->refine(servers.back());
     sCount++;
 
-    servers.push_back(new Server(300,500));
-
+    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
     servers[sCount-1]->refine(servers.back());
-//    servers[sCount-2]->refine(servers.back());
     sCount++;
+
+//    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
+//    servers[sCount-1]->refine(servers.back());
+//    sCount++;
 
 //    servers.push_back(new Server(350,100));
 //    servers[sCount-3]->refine(servers[sCount]);
