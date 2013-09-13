@@ -43,6 +43,10 @@ bool Point::operator ==(Point p)
     return (this->x() == p.x()) && (this->y() == p.y());
 }
 
+bool Point::operator <(Point p) {
+    return (xval < p.x() && yval < p.y());
+}
+
 // Move the existing point.
 void Point::move(double a, double b)
 {

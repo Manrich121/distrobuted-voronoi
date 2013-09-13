@@ -1,7 +1,7 @@
 #ifndef VOROWINDOW_H
 #define VOROWINDOW_H
 
-#define WIDTH 600
+
 
 #include <QMainWindow>
 #include <QtGui>

@@ -36,46 +36,114 @@ bool Server::underLoaded() {
  *  Distibuted Voronoi
  ***********************************/
 
-void Server::refine(Server* t) {
-    std::vector<Point> iPoints;
-    std::vector<Point> tPoints;
-
-    if (this->isNeigh(t)) {
-
-
-        // Redefine take a new point to be evaluated and calculates the new Cell
-        Point mid = middle(this->loc, t->loc);        // Calulate midpoint
-        Line line = getLine(this->loc, t->loc);
-        line = getPerpendic(line, mid);
-        this->findIntersects(line, &iPoints);
-
-        this->transferPoints(iPoints, &tPoints);
-
-        set <Server*>::iterator it;
-        set <Server*> tmpNeig = this->neighbours;
-        for(it = tmpNeig.begin(); it != tmpNeig.end(); it++) {
-            Server* curServ = (*it);
-            if (curServ->isNeigh(t)) {
-                iPoints.clear();
-                curServ->neighbours.insert(t);
-                t->neighbours.insert(curServ);
-
-                mid = middle(curServ->loc, t->loc);        // Calulate midpoint
-                Line line = getLine(curServ->loc, t->loc);
-                line = getPerpendic(line, mid);
-                curServ->findIntersects(line, &iPoints);
-
-                curServ->transferPoints(iPoints, &tPoints);
+void myUnique(std::vector<Point> *points) {
+    Point curPoint;
+    Point compPoint;
+    for (unsigned int i=0;i<points->size()-1; i++){
+        curPoint = points->at(i);
+        for(unsigned int j=i+1;j<points->size();j++){
+            compPoint = points->at(j);;
+            if(curPoint.equal(compPoint)) {
+                points->erase(points->begin()+j);
             }
         }
-
-        this->neighbours.insert(t);
-        t->neighbours.insert(this);
-
-        t->clearCell();
-//        t->GrahamSort(tPoints);
-        t->GrahamScan(tPoints);
     }
+
+    //test last
+    if (points->back().equal(*(points->end()-2))){
+        points->erase(points->end() -1);
+    }
+}
+
+void Server::refine(Server* t) {
+    Point curPoint;
+    double distTp, newDist;
+    Server* pointer;
+    std::vector<Point> sLocs;
+    std::vector<Point> vPoints;
+    std::vector<Point> tPoints;
+    std::vector<Point> sPoints;
+
+    this->neighbours.insert(t);
+
+    vPoints.push_back(Point(0,0));
+    vPoints.push_back(Point(WIDTH,0));
+    vPoints.push_back(Point(WIDTH,WIDTH));
+    vPoints.push_back(Point(0,WIDTH));
+
+    sLocs.push_back(this->loc);
+
+    set <Server*>::iterator it;
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        sLocs.push_back((*it)->loc);
+        (*it)->clearCell();
+    }
+
+    this->generateVoronoi(&sLocs, &vPoints);
+
+    myUnique(&vPoints);
+    bool mine;
+
+    for (unsigned int i=0;i<vPoints.size();i++) {
+        mine = true;
+        curPoint = vPoints[i];
+        distTp = this->loc.dist(curPoint);
+        for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+            newDist = (*it)->loc.dist(curPoint);
+            if (newDist < distTp) {
+                distTp = newDist;
+                (*it)->addVertex(curPoint);
+//                tPoints.push_back(curPoint);
+                mine = false;
+            }else{
+                if (abs(newDist - distTp) < EPS) {
+//                    tPoints.push_back(curPoint);
+                    (*it)->addVertex(curPoint);
+                }
+            }
+        }
+        if (mine) {
+//            this->addVertex(curPoint);
+            sPoints.push_back(curPoint);
+        }
+    }
+
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        tPoints.clear();
+        (*it)->vertsToVector(&tPoints);
+        (*it)->clearCell();
+        (*it)->GrahamScan(tPoints);
+    }
+
+    this->clearCell();
+    this->GrahamScan(sPoints);
+
+}
+
+void Server::generateVoronoi(std::vector<Point> *points, std::vector<Point> *lineseg) {
+    VoronoiDiagramGenerator vdg;
+    float x1,y1,x2,y2;
+
+    int count = points->size();
+    float xValues[count];
+    float yValues[count];
+
+    for (int i=0;i<count;i++) {
+        xValues[i] = points->at(i).x();
+        yValues[i] = points->at(i).y();
+    }
+
+    vdg.generateVoronoi(xValues,yValues,count, 0,WIDTH,0,WIDTH);
+
+    vdg.resetIterator();
+    printf("\n-------------------------------\n");
+    while(vdg.getNext(x1,y1,x2,y2))
+    {
+        printf("GOT Line (%g,%g)->(%g,%g)\n",x1,y1,x2, y2);
+        lineseg->push_back(Point(x1,y1));
+        lineseg->push_back(Point(x2,y2));
+    }
+
 }
 
 void Server::transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoints) {

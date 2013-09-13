@@ -9,9 +9,13 @@
 #include "client.h"
 #include "ConvexHullAlgs.h"
 
+#include "VoronoiDiagramGenerator.h"
+
 // Defines
 #define MAXCLIENTS 5
 #define MINCLIENTS 1
+#define WIDTH 600
+#define EPS 0.01
 
 #define _DEBUG
 
@@ -77,6 +81,8 @@ public:
     /**********************
      *  Distributed Voronoi
      **********************/
+    void generateVoronoi(std::vector<Point> *points, std::vector<Point> *lineseg);
+
     void GrahamSort(std::vector<Point> points);
     void GrahamScan(std::vector<Point> p);
     void vertsToVector(std::vector<Point> *v);
@@ -123,6 +129,7 @@ public:
 #ifdef _DEBUG
     bool master;
 #endif
+
 };
 
 bool ccw(Point p[], int n);

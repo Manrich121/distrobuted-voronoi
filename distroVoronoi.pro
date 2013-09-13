@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     quadwindow.cpp \
     client.cpp \
     ConvexHullAlgs.cpp \
-    Vector.cpp
+    Vector.cpp \
+    VoronoiDiagramGenerator.cpp
 
 HEADERS  += vorowindow.h \
     server.h \
@@ -27,7 +28,8 @@ HEADERS  += vorowindow.h \
     quadwindow.h \
     client.h \
     ConvexHullAlgs.h \
-    Vector.h
+    Vector.h \
+    VoronoiDiagramGenerator.h
 
 FORMS    += vorowindow.ui \
     quadwindow.ui
