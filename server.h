@@ -15,7 +15,7 @@
 #define MAXCLIENTS 5
 #define MINCLIENTS 1
 #define WIDTH 600
-#define EPS 0.01
+#define EPS 0.1
 
 #define _DEBUG
 

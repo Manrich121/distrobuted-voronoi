@@ -102,12 +102,12 @@ QPoint QuadWindow::pointToQp(Point p) {
 }
 
 void QuadWindow::setup() {
-    Server* curServ = new Server(500,500);
+    Server* curServ = new Server(WIDTH/2,WIDTH/2);
     curServ->master = true;
-    curServ->addRect(Point(0,0), Point(1000,1000));
-    curServ->myClients.insert(new Client(curServ->loc,1000));
+    curServ->addRect(Point(0,0), Point(WIDTH,WIDTH));
+    curServ->myClients.insert(new Client(curServ->loc,WIDTH));
     clientCount++;
-    curServ->myClients.insert(new Client(curServ->loc,1000));
+    curServ->myClients.insert(new Client(curServ->loc,WIDTH));
     clientCount++;
     servers.push_back(curServ);
 }
@@ -118,7 +118,7 @@ void QuadWindow::addClient() {
     std::stringstream out;
 
     if (!(*servers.rbegin())->isLoaded()) {
-        (*servers.rbegin())->myClients.insert(new Client((*servers.rbegin())->loc,1000));
+        (*servers.rbegin())->myClients.insert(new Client((*servers.rbegin())->loc,WIDTH));
         out << ++clientCount;
         s = out.str();
         ui->addClients->setText(QString(s.c_str()));
