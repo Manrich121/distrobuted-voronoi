@@ -4,6 +4,7 @@
 #include <set>          // std::set
 #include <list>         // std::list
 #include <vector>       // std::vector
+#include <map>          // std::map
 #include <algorithm>    // std::sort
 #include "point.h"
 #include "client.h"
@@ -15,7 +16,7 @@
 #define MAXCLIENTS 5
 #define MINCLIENTS 1
 #define WIDTH 600
-#define EPS 0.1
+#define EPS 0.001
 
 #define _DEBUG
 

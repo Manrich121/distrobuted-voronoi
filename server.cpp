@@ -73,6 +73,7 @@ void Server::refine(Server* t) {
 
     sLocs.push_back(this->loc);
 
+    this->clearCell();
     set <Server*>::iterator it;
     for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
         sLocs.push_back((*it)->loc);
@@ -82,30 +83,27 @@ void Server::refine(Server* t) {
     this->generateVoronoi(&sLocs, &vPoints);
 
     myUnique(&vPoints);
-    bool mine;
 
     for (unsigned int i=0;i<vPoints.size();i++) {
-        mine = true;
+        pointer = this;
         curPoint = vPoints[i];
         distTp = this->loc.dist(curPoint);
         for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
             newDist = (*it)->loc.dist(curPoint);
-            if (newDist < distTp) {
-                distTp = newDist;
-                (*it)->addVertex(curPoint);
+
+            if (abs(newDist - distTp) < EPS) {
 //                tPoints.push_back(curPoint);
-                mine = false;
+                (*it)->addVertex(curPoint);
             }else{
-                if (abs(newDist - distTp) < EPS) {
+                if (newDist < distTp) {
+                    distTp = newDist;
+                    pointer = (*it);
 //                    tPoints.push_back(curPoint);
-                    (*it)->addVertex(curPoint);
                 }
             }
         }
-        if (mine) {
-//            this->addVertex(curPoint);
-            sPoints.push_back(curPoint);
-        }
+        pointer->addVertex(curPoint);
+//            sPoints.push_back(curPoint);
     }
 
     for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
@@ -115,6 +113,7 @@ void Server::refine(Server* t) {
         (*it)->GrahamScan(tPoints);
     }
 
+    this->vertsToVector(&sPoints);
     this->clearCell();
     this->GrahamScan(sPoints);
 

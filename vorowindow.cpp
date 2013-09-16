@@ -90,12 +90,12 @@ void VoroWindow::setup() {
 
     sCount++;
 
-    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
+    servers.push_back(new Server(400,450));
 //    servers.front()->neighbours.insert(servers.back());
     servers.front()->refine(servers.back());
     sCount++;
 
-    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
+    servers.push_back(new Server(300,150));
     servers.front()->refine(servers.back());
     sCount++;
 
