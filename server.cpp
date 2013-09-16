@@ -62,79 +62,59 @@ void myUnique(std::vector<Point> *points) {
 }
 
 void Server::refine(Server* t) {
-    Point curPoint;
-    double distTp, newDist;
-    Server* pointer;
-    std::vector<Point> sLocs;
-    std::vector<Point> vPoints;
-    std::vector<Point> tPoints;
-    std::vector<Point> sPoints;
 
     if (this->isNeigh(t)) {
 
     this->neighbours.insert(t);
+    t->neighbours.insert(this);
+
+    this->generateVoronoi();
+
+    set <Server*>::iterator it;
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        if ((*it)->isNeigh(t) && (*it) != t) {
+            (*it)->neighbours.insert(t);
+            t->neighbours.insert(*it);
+        }
+    }
+
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        (*it)->generateVoronoi();
+    }
+
+    }else{
+        printf("not neigh\n");
+    }
+}
+
+void Server::generateVoronoi() {
+    std::vector<Point> sPoints;
+    std::vector<Point> vPoints;
+    std::vector<Point> points;
+    VoronoiDiagramGenerator vdg;
+    set <Server*>::iterator it;
+    float x1,y1,x2,y2;
+    Point curPoint;
+    double distTp, newDist;
+
+    // Get all server locations
+    points.push_back(this->loc);
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        points.push_back((*it)->loc);
+    }
+
+    int count = points.size();
+    float xValues[count];
+    float yValues[count];
 
     vPoints.push_back(Point(0,0));
     vPoints.push_back(Point(WIDTH,0));
     vPoints.push_back(Point(WIDTH,WIDTH));
     vPoints.push_back(Point(0,WIDTH));
 
-    sLocs.push_back(this->loc);
-
-    this->deleteCell();
-    set <Server*>::iterator it;
-    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
-        sLocs.push_back((*it)->loc);
-        (*it)->deleteCell();
-    }
-
-    this->generateVoronoi(&sLocs, &vPoints);
-
-    myUnique(&vPoints);
-
-    for (unsigned int i=0;i<vPoints.size();i++) {
-        pointer = this;
-        curPoint = vPoints[i];
-        distTp = this->loc.dist(curPoint);
-        for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
-            newDist = (*it)->loc.dist(curPoint);
-
-            if (abs(newDist - distTp) < EPS) {
-                (*it)->addVertex(curPoint,false);
-            }else{
-                if (newDist < distTp) {
-                    distTp = newDist;
-                    pointer = (*it);
-                }
-            }
-        }
-        pointer->addVertex(curPoint, false);
-    }
-
-    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
-        tPoints.clear();
-        (*it)->vertsToVector(&tPoints);
-        (*it)->deleteCell();
-        (*it)->GrahamScan(tPoints);
-    }
-
-    this->vertsToVector(&sPoints);
-    this->deleteCell();
-    this->GrahamScan(sPoints);
-    }
-}
-
-void Server::generateVoronoi(std::vector<Point> *points, std::vector<Point> *lineseg) {
-    VoronoiDiagramGenerator vdg;
-    float x1,y1,x2,y2;
-
-    int count = points->size();
-    float xValues[count];
-    float yValues[count];
-
     for (int i=0;i<count;i++) {
-        xValues[i] = points->at(i).x();
-        yValues[i] = points->at(i).y();
+        xValues[i] = points.at(i).x();
+        yValues[i] = points.at(i).y();
     }
 
     vdg.generateVoronoi(xValues,yValues,count, 0,WIDTH,0,WIDTH);
@@ -143,11 +123,44 @@ void Server::generateVoronoi(std::vector<Point> *points, std::vector<Point> *lin
     printf("\n-------------------------------\n");
     while(vdg.getNext(x1,y1,x2,y2))
     {
-        printf("GOT Line (%g,%g)->(%g,%g)\n",x1,y1,x2, y2);
-        lineseg->push_back(Point(x1,y1));
-        lineseg->push_back(Point(x2,y2));
+//        printf("GOT Line (%g,%g)->(%g,%g)\n",x1,y1,x2, y2);
+        vPoints.push_back(Point(x1,y1));
+        vPoints.push_back(Point(x2,y2));
     }
 
+    myUnique(&vPoints);
+    this->deleteCell();
+    bool mine;
+    for (unsigned int i=0;i<vPoints.size();i++) {
+        mine = true;
+        curPoint = vPoints[i];
+        distTp = this->loc.dist(curPoint);
+        for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+            newDist = (*it)->loc.dist(curPoint);
+            if (abs(newDist - distTp) < EPS) {
+                this->addVertex(curPoint, false);
+            }
+            if (newDist < distTp) {
+                mine = false;
+            }
+        }
+        if (mine) {
+            this->addVertex(curPoint, false);
+        }
+    }
+
+    this->vertsToVector(&sPoints);
+    myUnique(&sPoints);
+    this->deleteCell();
+    this->GrahamScan(sPoints);
+
+//    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+//        // Remove possible non-neigbours
+//        if (!this->isNeigh(*it)){
+//            this->neighbours.erase(*it);
+//            (*it)->neighbours.erase(this);
+//        }
+//    }
 }
 
 void Server::transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoints) {

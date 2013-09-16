@@ -77,46 +77,20 @@ void VoroWindow::setup() {
 
     // Insert first server
     servers.push_back(new Server(300,300));
+    sCount++;
     p.push_back(Point(WIDTH,0));
     p.push_back(Point(WIDTH,WIDTH));
     p.push_back(Point(0,0));
     p.push_back(Point(0,WIDTH));
 
-//    points->push_back(Vector(600,0,znew,wnew));
-//    points->push_back(Vector(0,0,znew,wnew));
-//    points->push_back(Vector(0,600,znew,wnew));
-//    points->push_back(Vector(600,600,znew,wnew));
-//    points->push_back(Vector(100,600,znew,wnew));
-
-    sCount++;
-
-    servers.push_back(new Server(400,450));
-//    servers.front()->neighbours.insert(servers.back());
-    servers.front()->refine(servers.back());
-    sCount++;
-
-    servers.push_back(new Server(300,150));
-    servers.front()->refine(servers.back());
-    sCount++;
-
-//    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
-//    servers[sCount-1]->refine(servers.back());
-//    sCount++;
-
-//    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
-//    servers[sCount-1]->refine(servers.back());
-//    sCount++;
-
-//    servers.push_back(new Server(350,100));
-//    servers[sCount-3]->refine(servers[sCount]);
-//    servers[sCount-2]->refine(servers[sCount]);
-//    servers[sCount-1]->refine(servers[sCount]);
-//    sCount++;
+    servers.front()->GrahamScan(p);
 }
 
 void VoroWindow::on_pushButton_clicked() {
-    sCount =0;
-    servers.clear();
-    setup();
+    servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
+    servers.front()->refine(servers.back());
+    sCount++;
+//    setup();
     update();
+
 }

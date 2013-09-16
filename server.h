@@ -16,7 +16,7 @@
 #define MAXCLIENTS 5
 #define MINCLIENTS 1
 #define WIDTH 600
-#define EPS 0.001
+
 
 #define _DEBUG
 
@@ -44,6 +44,9 @@ public:
     Vertex(Point a){
         loc = a;
         next = NULL;
+    }
+    ~Vertex() {
+        delete &loc;
     }
 
     Point loc;
@@ -73,6 +76,7 @@ class Server
 {
 public:
     Server();
+    ~Server();
     Server(double x, double y);
 
     void printNeighbourLocs();
@@ -82,7 +86,7 @@ public:
     /**********************
      *  Distributed Voronoi
      **********************/
-    void generateVoronoi(std::vector<Point> *points, std::vector<Point> *lineseg);
+    void generateVoronoi();
 
     void GrahamSort(std::vector<Point> points);
     void GrahamScan(std::vector<Point> p);
@@ -96,9 +100,9 @@ public:
     void transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoints);
 
     // Polygon functions
-    void addVertex(Point a);
-    void clearCell();
-    void deleteVertex(Vertex* v);
+    void addVertex(Point a, bool ccw);
+    void deleteCell();
+    void deleteMyVertex(Vertex* v);
     bool pointInPolygon(Point p);
     std::vector<Point> *RemoveDup(std::vector<Point> v);
 

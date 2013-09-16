@@ -63,7 +63,7 @@ void Point::print(ostream &strm)
 
 // Retruns true if the two points are equal
 bool Point::equal(Point p) {
-    return (this->x() == p.x()) && (this->y() == p.y());
+    return (abs(this->x() - p.x()) <= EPS && abs(this->y() - p.y()) <= EPS);
 }
 
 
