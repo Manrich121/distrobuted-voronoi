@@ -13,6 +13,12 @@ Server::Server(){
     master = false;
 }
 
+Server::~Server() {
+    this->deleteCell();
+    delete this->cell.origin;
+    delete parent;
+}
+
 Server::Server(double x, double y)
 {
     loc = Point(x,y);
@@ -64,6 +70,8 @@ void Server::refine(Server* t) {
     std::vector<Point> tPoints;
     std::vector<Point> sPoints;
 
+    if (this->isNeigh(t)) {
+
     this->neighbours.insert(t);
 
     vPoints.push_back(Point(0,0));
@@ -73,11 +81,11 @@ void Server::refine(Server* t) {
 
     sLocs.push_back(this->loc);
 
-    this->clearCell();
+    this->deleteCell();
     set <Server*>::iterator it;
     for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
         sLocs.push_back((*it)->loc);
-        (*it)->clearCell();
+        (*it)->deleteCell();
     }
 
     this->generateVoronoi(&sLocs, &vPoints);
@@ -92,31 +100,28 @@ void Server::refine(Server* t) {
             newDist = (*it)->loc.dist(curPoint);
 
             if (abs(newDist - distTp) < EPS) {
-//                tPoints.push_back(curPoint);
-                (*it)->addVertex(curPoint);
+                (*it)->addVertex(curPoint,false);
             }else{
                 if (newDist < distTp) {
                     distTp = newDist;
                     pointer = (*it);
-//                    tPoints.push_back(curPoint);
                 }
             }
         }
-        pointer->addVertex(curPoint);
-//            sPoints.push_back(curPoint);
+        pointer->addVertex(curPoint, false);
     }
 
     for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
         tPoints.clear();
         (*it)->vertsToVector(&tPoints);
-        (*it)->clearCell();
+        (*it)->deleteCell();
         (*it)->GrahamScan(tPoints);
     }
 
     this->vertsToVector(&sPoints);
-    this->clearCell();
+    this->deleteCell();
     this->GrahamScan(sPoints);
-
+    }
 }
 
 void Server::generateVoronoi(std::vector<Point> *points, std::vector<Point> *lineseg) {
@@ -170,7 +175,7 @@ void Server::transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoi
             pointer = pointer->next;
         }
 
-        this->clearCell();
+        this->deleteCell();
 //        this->GrahamSort(myPoints);
         this->GrahamScan(myPoints);
     }
@@ -180,7 +185,7 @@ void Server::transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoi
  *  Adds a Vertex to this.cell incrementing cell.n and calculate cell.rmax as the maximum distance
  *  from this.loc and the new Vertex
  */
-void Server::addVertex(Point a) {
+void Server::addVertex(Point a, bool ccw) {
     Vertex* pointer = this->cell.origin;
     Vertex* vNode = new Vertex(a);
     vNode->next = NULL;
@@ -188,32 +193,29 @@ void Server::addVertex(Point a) {
     if (pointer == NULL) {          // Cell not yet init
         this->cell.origin = vNode;
         this->cell.origin->prev = NULL;
-        this->cell.n = 0;
+        this->cell.n = 1;
         this->cell.rmax = 0;
     }else{
         if (pointer->prev == NULL) {    // Cell only contains one Vertex=origin
-            if (pointer->loc.equal(vNode->loc)) {
-                return;
-            }
             pointer->next = vNode;      // Add new Vertex
+            this->cell.n++;
             vNode->prev = pointer;
         }else{
-            pointer = pointer->prev;    // Jump to end of polygon
-            if (collinear(pointer->prev->loc, pointer->loc, vNode->loc)){
-                pointer->prev->next = vNode;
-                vNode->prev = pointer->prev;
-                delete pointer;
-            }
-            if (pointer->loc.equal(vNode->loc)) {
-                return;
-            }
-
+            pointer = this->cell.origin->prev;    // Jump to end of polygon
+            if (ccw== true && collinear(pointer->prev->loc, pointer->loc, vNode->loc)){
+               pointer->prev->next = vNode;
+               vNode->prev = pointer->prev;
+               this->cell.origin->prev = vNode;
+               pointer->~Vertex();
+               return;
+           }
             pointer->next = vNode;      // Add new Vertex
+            this->cell.n++;
             vNode->prev = pointer;
         }
         this->cell.origin->prev = vNode;
     }
-    this->cell.n++;
+
 
     // Recalc rmax
     double newR = this->loc.dist(a);    // calculate radius to new point
@@ -222,20 +224,20 @@ void Server::addVertex(Point a) {
     }
 }
 
-void Server::clearCell(){
+void Server::deleteCell(){
     if (this->cell.origin == NULL) {
         return;
     }
-    deleteVertex(this->cell.origin);
+    deleteMyVertex(this->cell.origin);
     this->cell.origin = NULL;
     this->cell.n = 0;
 }
 
-void Server::deleteVertex(Vertex* v) {
+void Server::deleteMyVertex(Vertex* v) {
     if (v->next == NULL) {
-        delete(v);
+        v->~Vertex();
     }else{
-        deleteVertex(v->next);
+        deleteMyVertex(v->next);
     }
 }
 
@@ -252,20 +254,6 @@ void Server::checkNeighbours() {
 
 bool Server::isNeigh(Server* t) {
     Point mid = middle(this->loc, t->loc);        // Calulate midpoint
-//    if (this->pointInPolygon(mid)) {
-//        return true;
-//    }
-//    double midDist = mid.dist(t->loc);
-//    Vertex* pointer = this->cell.origin;
-
-//    while (pointer != NULL) {
-//        if (pointer->loc.dist(t->loc) <= midDist) {
-//            return true;
-//        }
-//        pointer = pointer->next;
-//    }
-
-//    return false;
     return (this->loc.dist(mid) <= this->cell.rmax);
 }
 
@@ -327,7 +315,7 @@ void Server::GrahamSort(std::vector<Point> points) {
     // Remove l from vector points
     points.erase(points.begin()+lpos);
 
-    this->addVertex(l);
+    this->addVertex(l,true);
 
     unsigned i;
     // Sort
@@ -341,9 +329,9 @@ void Server::GrahamSort(std::vector<Point> points) {
                 points[j] = tmp;
             }
         }
-        this->addVertex(points[i]);
+        this->addVertex(points[i], true);
     }
-    this->addVertex(points[i]);
+    this->addVertex(points[i],true);
 }
 
 void Server::GrahamScan(std::vector<Point> p) {
@@ -359,7 +347,7 @@ void Server::GrahamScan(std::vector<Point> p) {
     if(!ConvexHullAlgs::GrahamsScan(convexHull, points))
         printf("error computing convex hull\n");
     for (unsigned int i=0;i<convexHull->size();i++){
-        this->addVertex(Point(convexHull->at(i).x,convexHull->at(i).y));
+        this->addVertex(Point(convexHull->at(i).x,convexHull->at(i).y),true);
     }
 
 }
@@ -769,4 +757,6 @@ void Server::printNeighbourLocs(){
         printf("N's loc (%g,%g)\n",(*it)->loc.x(),(*it)->loc.y());
     }
 }
+
+
 
