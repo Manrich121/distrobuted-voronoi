@@ -2,10 +2,12 @@
 #define VOROWINDOW_H
 
 
-
+#include <set>
 #include <QMainWindow>
 #include <QtGui>
+#include <QGraphicsItem>
 #include "server.h"
+#include "client.h"
 
 namespace Ui {
 class VoroWindow;
@@ -21,15 +23,22 @@ public:
     void paintEvent(QPaintEvent*);
     QPoint pointToQp(Point p);
     void setup();
-    
+
+public slots:
+    void clientUpdate();
+    void addClient();
+    void checkLoad();
 private slots:
     void on_pushButton_clicked();
+    void on_addClients_clicked();
 
 private:
     Ui::VoroWindow *ui;
     std::vector<Server*> servers;
     int sCount;
     QColor* c[10];
+    QTimer* updateTimer;
+    QTimer* loadTimer;
 };
 
 #endif // VOROWINDOW_H

@@ -15,7 +15,8 @@
 // Defines
 #define MAXCLIENTS 5
 #define MINCLIENTS 1
-#define WIDTH 600
+#define WIDTH 800
+#define VORO true
 
 
 #define _DEBUG
@@ -95,9 +96,11 @@ public:
     void checkNeighbours();
     bool isNeigh(Server* t);
 
-    void refine(Server *t);     // calculate the new cell after intercection of the halfspace between
+    bool refine(Server *t);     // calculate the new cell after intercection of the halfspace between
                                 // the current server and new point
-    void transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoints);
+
+    Point getCenterofClients();
+    void returnThisSite();
 
     // Polygon functions
     void addVertex(Point a, bool ccw);
@@ -119,7 +122,7 @@ public:
     bool insideArea(Point* tp);  // Determines if the test point tp is inside the area of current server
     void addAdjacent(Server* t); // Determines if the Server t, and all its neighbours is adjacent to this, thus is a neighbour
     void ownership(Client* c);
-    void checkOwership();
+    void checkOwnership();
 
 // Params
     Point loc;

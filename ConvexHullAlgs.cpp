@@ -54,8 +54,11 @@ bool ConvexHullAlgs::GrahamsScan(std::vector<Vector> *convexHull, std::vector<Ve
 
 	for(unsigned int i = 2; i<polars.size(); ++i) {
 		while(true) {
+            if (convexHull->size() - 2 < 0){
+                return false;
+            }
 			// determine if angle between next-to-top(s), top(s) and pi makes left turn
-			Vector a = convexHull->back() - convexHull->at(convexHull->size()-2); // top - next-to-top = vector from next-to-top to top
+            Vector a = convexHull->back() - convexHull->at(convexHull->size()-2); // top - next-to-top = vector from next-to-top to top
 			Vector b = polars[i].v - convexHull->back(); // p_i-top = vector from top to p_i
 			Vector normal = Vector::crossProduct(a,b); // a X b, cross product
 			if(normal.z > 0) // left turn

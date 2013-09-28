@@ -162,7 +162,7 @@ void QuadWindow::clientUpdate() {
             it = tmp;
         }
 
-        (*sit)->checkOwership();
+        (*sit)->checkOwnership();
 
     }
     update();
@@ -192,6 +192,8 @@ void QuadWindow::checkLoad() {
     }
     update();
 }
+
+
 
 void QuadWindow::on_addClients_clicked()
 {

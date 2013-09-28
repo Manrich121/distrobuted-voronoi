@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>762</width>
-    <height>601</height>
+    <width>820</width>
+    <height>820</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,20 @@
      </rect>
     </property>
     <property name="text">
-     <string>Relocate</string>
+     <string>Add Server</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="addClients">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>0</y>
+      <width>80</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>addClients</string>
     </property>
    </widget>
   </widget>

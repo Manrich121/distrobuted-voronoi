@@ -1,7 +1,10 @@
 #include "vorowindow.h"
 #include "ui_vorowindow.h"
+#include <sstream>
+#include <stdio.h>
+#include "time.h"
 
-
+int cCount =0;
 VoroWindow::VoroWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::VoroWindow)
 {
     sCount = 0;
@@ -22,6 +25,18 @@ VoroWindow::VoroWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::VoroWi
     setup();
     update();
 
+    //Update timer
+    this->updateTimer = new QTimer();
+    this->updateTimer->setInterval(100);
+    connect(this->updateTimer, SIGNAL(timeout()), this, SLOT(clientUpdate()));
+//    connect(updateTimer, SIGNAL(timeout()), this, SLOT(checkLoad()));
+    updateTimer->start();
+
+    //client add timer
+    loadTimer = new QTimer();
+    loadTimer->setInterval(500);
+    connect(loadTimer, SIGNAL(timeout()), this, SLOT(checkLoad()));
+    loadTimer->start();
 }
 
 VoroWindow::~VoroWindow()
@@ -32,13 +47,14 @@ VoroWindow::~VoroWindow()
 void VoroWindow::paintEvent(QPaintEvent*) {
     int n;
     Vertex* pointer;
+    set <Client*>::iterator it;
 
     QPainter painter(this);
     // Pen
     QPen pen;
     painter.setPen(pen);
 
-    for (int i=0;i<sCount;i++) {    //loop over servers
+    for (int i=0;i<servers.size();i++) {    //loop over servers
         pen.setColor(*c[i]);
 
         pen.setWidth(4);
@@ -50,6 +66,10 @@ void VoroWindow::paintEvent(QPaintEvent*) {
         QPoint polyPoints[n];
 
         painter.drawPoint(pointToQp(servers[i]->loc));
+
+        for (it = servers[i]->myClients.begin(); it != servers[i]->myClients.end(); it++) {
+            painter.drawPoint(pointToQp((*it)->loc));
+        }
 
         // Draw current server cell
         servers[i]->vertsToVector(&vpoints);
@@ -77,6 +97,8 @@ void VoroWindow::setup() {
 
     // Insert first server
     servers.push_back(new Server(300,300));
+    servers.front()->myClients.insert(new Client((*servers.rbegin())->loc,WIDTH));
+    cCount++;
     sCount++;
     p.push_back(Point(WIDTH,0));
     p.push_back(Point(WIDTH,WIDTH));
@@ -86,6 +108,64 @@ void VoroWindow::setup() {
     servers.front()->GrahamScan(p);
 }
 
+void VoroWindow::addClient() {
+    std::string s;
+    std::stringstream out;
+
+    if (!(*servers.rbegin())->isLoaded()) {
+        (*servers.rbegin())->myClients.insert(new Client((*servers.rbegin())->loc,WIDTH));
+        out << ++cCount;
+        s = out.str();
+        ui->addClients->setText(QString(s.c_str()));
+    }
+
+}
+
+void VoroWindow::clientUpdate() {
+    vector <Server*>::iterator sit;
+    set <Client*>::iterator it;
+    set <Client*>::iterator tmp;
+
+    for (sit = this->servers.begin(); sit != this->servers.end(); sit++) {
+        for (it = (*sit)->myClients.begin(); it != (*sit)->myClients.end();) {
+            tmp = it;
+            (*it)->move();
+            ++tmp;
+            it = tmp;
+        }
+        (*sit)->checkOwnership();
+    }
+    update();
+}
+
+bool retFlag = false;
+void VoroWindow::checkLoad() {
+    vector <Server*>::iterator sit;
+    Server* curServ;
+
+    retFlag = !retFlag;
+    for (int i=0;i<sCount;i++) {    //loop over servers
+        curServ = servers[i];
+
+        if (retFlag && curServ->underLoaded()) {
+            curServ->returnThisSite();
+            servers.erase(servers.begin()+i);
+            sCount--;
+            break;
+        }
+
+        if (curServ->isLoaded() && servers.size() <10) {
+            Server* newServer = new Server();
+            if(curServ->refine(newServer)){
+                servers.push_back(newServer);
+                sCount++;
+            }
+
+        }
+    }
+    update();
+}
+
 void VoroWindow::on_pushButton_clicked() {
     servers.push_back(new Server(rand()%WIDTH+1,rand()%WIDTH+1));
     servers.front()->refine(servers.back());
@@ -93,4 +173,9 @@ void VoroWindow::on_pushButton_clicked() {
 //    setup();
     update();
 
+}
+
+void VoroWindow::on_addClients_clicked()
+{
+    this->addClient();
 }

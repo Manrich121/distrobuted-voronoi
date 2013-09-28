@@ -35,6 +35,8 @@ bool Server::isLoaded() {
 }
 
 bool Server::underLoaded() {
+    if (VORO)
+        return (!this->master && this->myClients.size()<MINCLIENTS);
     return (this->lvl !=-1 && this->myClients.size()<MINCLIENTS && this->cell.n==1);
 }
 
@@ -61,7 +63,8 @@ void myUnique(std::vector<Point> *points) {
     }
 }
 
-void Server::refine(Server* t) {
+bool Server::refine(Server* t) {
+    t->loc = this->getCenterofClients();
 
     if (this->isNeigh(t)) {
 
@@ -81,10 +84,37 @@ void Server::refine(Server* t) {
     for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
         (*it)->generateVoronoi();
     }
-
+    return true;
     }else{
+        return false;
         printf("not neigh\n");
     }
+}
+
+void Server::returnThisSite(){
+    set <Server*>::iterator it;
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        (*it)->neighbours.erase(this);
+    }
+
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        (*it)->generateVoronoi();
+    }
+}
+
+Point Server::getCenterofClients(){
+    set <Client*>::iterator cit;
+    double x=0;
+    double y=0;
+
+    for(cit = this->myClients.begin(); cit != this->myClients.end();cit++){
+        x += (*cit)->loc.x();
+        y += (*cit)->loc.y();
+    }
+
+    x /= this->myClients.size();
+    y /= this->myClients.size();
+    return Point(x,y);
 }
 
 void Server::generateVoronoi() {
@@ -120,7 +150,7 @@ void Server::generateVoronoi() {
     vdg.generateVoronoi(xValues,yValues,count, 0,WIDTH,0,WIDTH);
 
     vdg.resetIterator();
-    printf("\n-------------------------------\n");
+//    printf("\n-------------------------------\n");
     while(vdg.getNext(x1,y1,x2,y2))
     {
 //        printf("GOT Line (%g,%g)->(%g,%g)\n",x1,y1,x2, y2);
@@ -161,37 +191,6 @@ void Server::generateVoronoi() {
 //            (*it)->neighbours.erase(this);
 //        }
 //    }
-}
-
-void Server::transferPoints(std::vector<Point> iPoints, std::vector<Point> *tPoints) {
-    std::vector<Point> myPoints;
-    if (iPoints.size() == 2){
-        if (ccw(this->loc, iPoints[0], iPoints[1])){
-            Point tmp = iPoints[0];
-            iPoints[0] = iPoints[1];
-            iPoints[1] = tmp;
-        }
-        tPoints->push_back(iPoints[0]);
-        tPoints->push_back(iPoints[1]);
-        myPoints.push_back(iPoints[0]);
-        myPoints.push_back(iPoints[1]);
-
-        // Loop though this.cell and transfer points to myPoints and tPoints
-        Vertex* pointer = this->cell.origin;
-        bool iamLeft = isLeft(this->loc, iPoints[0], iPoints[1]);
-        while (pointer != NULL) {
-            if (iamLeft && isLeft(pointer->loc, iPoints[0], iPoints[1])) {
-                myPoints.push_back(pointer->loc);
-            }else{
-                tPoints->push_back(pointer->loc);
-            }
-            pointer = pointer->next;
-        }
-
-        this->deleteCell();
-//        this->GrahamSort(myPoints);
-        this->GrahamScan(myPoints);
-    }
 }
 
 /*
@@ -359,6 +358,7 @@ void Server::GrahamScan(std::vector<Point> p) {
 
     if(!ConvexHullAlgs::GrahamsScan(convexHull, points))
         printf("error computing convex hull\n");
+
     for (unsigned int i=0;i<convexHull->size();i++){
         this->addVertex(Point(convexHull->at(i).x,convexHull->at(i).y),true);
     }
@@ -607,7 +607,7 @@ bool Server::transfer(Server *t) {
 
     t->addAdjacent(this);
 
-    this->checkOwership();
+    this->checkOwnership();
 
 //    while (this->isLoaded()) {
 //        curRect = (*this->cell.rect.rbegin());
@@ -660,7 +660,7 @@ bool Server::returnArea() {
             this->parent->myClients.insert(*cit);
         }
 
-        this->parent->checkOwership();
+        this->parent->checkOwnership();
 
         // Remove me from all neighbour lists
         for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
@@ -733,10 +733,10 @@ void Server::addAdjacent(Server* t) {
 void Server::ownership(Client* c) {
     bool found = false;
 
+ if (!VORO) {
     if (this->insideArea(&c->loc)) {
         return;
     }
-
     set <Server*>::iterator it;
     for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
         if ((*it)->insideArea(&c->loc)) {
@@ -745,6 +745,21 @@ void Server::ownership(Client* c) {
             this->myClients.erase(c);
         }
     }
+ }else{
+
+    if (this->pointInPolygon(c->loc)) {
+        return;
+    }
+    set <Server*>::iterator it;
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        if ((*it)->pointInPolygon(c->loc)) {
+            found = true;
+            (*it)->myClients.insert(c);
+            this->myClients.erase(c);
+        }
+    }
+ }
+
 #ifdef _DEBUG
     if (!found) {
         printf("Client bug");
@@ -753,7 +768,7 @@ void Server::ownership(Client* c) {
 }
 
 
-void Server::checkOwership() {
+void Server::checkOwnership() {
     set <Client*>::iterator it;
     set <Client*> tmp = myClients;
 
