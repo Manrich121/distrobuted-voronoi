@@ -32,6 +32,8 @@ private slots:
     void on_pushButton_clicked();
     void on_addClients_clicked();
 
+    void on_pushButton_2_clicked();
+
 private:
     Ui::VoroWindow *ui;
     std::vector<Server*> servers;

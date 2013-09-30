@@ -57,7 +57,7 @@ void VoroWindow::paintEvent(QPaintEvent*) {
     for (int i=0;i<servers.size();i++) {    //loop over servers
         pen.setColor(*c[i]);
 
-        pen.setWidth(4);
+        pen.setWidth(8);
         pen.setColor(*c[i]);
         painter.setPen(pen);
 
@@ -66,7 +66,8 @@ void VoroWindow::paintEvent(QPaintEvent*) {
         QPoint polyPoints[n];
 
         painter.drawPoint(pointToQp(servers[i]->loc));
-
+        pen.setWidth(4);
+        painter.setPen(pen);
         for (it = servers[i]->myClients.begin(); it != servers[i]->myClients.end(); it++) {
             painter.drawPoint(pointToQp((*it)->loc));
         }
@@ -82,7 +83,8 @@ void VoroWindow::paintEvent(QPaintEvent*) {
 
 //                printf("Server %d: (%g,%g)\n",i,vpoints[j].x(),vpoints[j].y());
             }
-            pen.setWidth(1);
+            pen.setWidth(3);
+            painter.setPen(pen);
             painter.drawPolygon(polyPoints,n);
         }
     }
@@ -178,4 +180,15 @@ void VoroWindow::on_pushButton_clicked() {
 void VoroWindow::on_addClients_clicked()
 {
     this->addClient();
+}
+
+void VoroWindow::on_pushButton_2_clicked()
+{
+    if(loadTimer->isActive()){
+        loadTimer->stop();
+        updateTimer->stop();
+    }else{
+        loadTimer->start();
+        updateTimer->start();
+    }
 }

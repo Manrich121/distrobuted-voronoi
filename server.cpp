@@ -1,7 +1,5 @@
 #include <cstdio>
 #include "server.h"
-#include "point.h"
-
 
 Server::Server(){
     loc = Point(0,0);
@@ -165,17 +163,21 @@ void Server::generateVoronoi() {
         mine = true;
         curPoint = vPoints[i];
         distTp = this->loc.dist(curPoint);
+        // Loop over neighs
         for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+
+            // Calc distance between neighbour and point
             newDist = (*it)->loc.dist(curPoint);
             if (abs(newDist - distTp) < EPS) {
-                this->addVertex(curPoint, false);
-            }
-            if (newDist < distTp) {
-                mine = false;
+                mine = true;
+            }else{
+                if (newDist < distTp) {
+                    mine = false;
+                }
             }
         }
         if (mine) {
-            this->addVertex(curPoint, false);
+            this->addVertex(curPoint, true);
         }
     }
 
@@ -214,23 +216,23 @@ void Server::addVertex(Point a, bool ccw) {
             vNode->prev = pointer;
         }else{
             pointer = this->cell.origin->prev;    // Jump to end of polygon
-            if (ccw== true && collinear(pointer->prev->loc, pointer->loc, vNode->loc)){
+            if (ccw == true && collinear(pointer->prev->loc, pointer->loc, vNode->loc)){
                pointer->prev->next = vNode;
                vNode->prev = pointer->prev;
                this->cell.origin->prev = vNode;
                pointer->~Vertex();
-               return;
+               return;   // Escape
            }
             pointer->next = vNode;      // Add new Vertex
-            this->cell.n++;
             vNode->prev = pointer;
+            this->cell.n++;
         }
         this->cell.origin->prev = vNode;
     }
 
 
     // Recalc rmax
-    double newR = this->loc.dist(a);    // calculate radius to new point
+    double newR = 2*this->loc.dist(a);    // calculate radius to new point
     if (newR > this->cell.rmax) {
         this->cell.rmax = newR;
     }
@@ -265,8 +267,9 @@ void Server::checkNeighbours() {
 }
 
 bool Server::isNeigh(Server* t) {
-    Point mid = middle(this->loc, t->loc);        // Calulate midpoint
-    return (this->loc.dist(mid) <= this->cell.rmax);
+//    Point mid = middle(this->loc, t->loc);        // Calulate midpoint
+//    return (this->loc.dist(mid) <= this->cell.rmax);
+    return this->loc.dist(t->loc) <= this->cell.rmax;
 }
 
 void Server::findIntersects(Line line, std::vector<Point> *ip) {
