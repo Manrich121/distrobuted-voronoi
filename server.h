@@ -18,7 +18,6 @@
 #define WIDTH 800
 #define VORO true
 
-
 #define _DEBUG
 
 /*****************************************************************************
@@ -87,6 +86,7 @@ public:
     /**********************
      *  Distributed Voronoi
      **********************/
+//    std::vector<Point> generateVoronoi();
     void generateVoronoi();
 
     void GrahamSort(std::vector<Point> points);
@@ -132,7 +132,6 @@ public:
     int childCount;
     std::set<Server*> neighbours;
     std::set<Client*> myClients;
-
 
 #ifdef _DEBUG
     bool master;

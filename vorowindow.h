@@ -1,13 +1,14 @@
 #ifndef VOROWINDOW_H
 #define VOROWINDOW_H
 
-
 #include <set>
 #include <QMainWindow>
 #include <QtGui>
 #include <QGraphicsItem>
 #include "server.h"
 #include "client.h"
+
+#include "voronoidisplayer.h"
 
 namespace Ui {
 class VoroWindow;
@@ -41,6 +42,10 @@ private:
     QColor* c[10];
     QTimer* updateTimer;
     QTimer* loadTimer;
+
+    // Diagrams
+    VoronoiDisplayer* tellies [100];
+    int tCount;
 };
 
 #endif // VOROWINDOW_H

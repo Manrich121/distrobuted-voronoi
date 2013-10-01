@@ -7,6 +7,8 @@
 int cCount =0;
 VoroWindow::VoroWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::VoroWindow)
 {
+    tCount = 0;
+
     sCount = 0;
     srand(time(NULL));
     c[0] = new QColor(Qt::red);
@@ -54,7 +56,7 @@ void VoroWindow::paintEvent(QPaintEvent*) {
     QPen pen;
     painter.setPen(pen);
 
-    for (int i=0;i<servers.size();i++) {    //loop over servers
+    for (unsigned int i=0;i<servers.size();i++) {    //loop over servers
         pen.setColor(*c[i]);
 
         pen.setWidth(8);
@@ -187,6 +189,16 @@ void VoroWindow::on_pushButton_2_clicked()
     if(loadTimer->isActive()){
         loadTimer->stop();
         updateTimer->stop();
+
+
+        for(int i=0;i<servers.size();i++){
+            // debugging
+            std::vector<Point> vs;
+            servers.at(i)->vertsToVector(&vs);
+            VoronoiDisplayer* myTelly = new VoronoiDisplayer(0, vs);
+            myTelly->show();
+        }
+        update();
     }else{
         loadTimer->start();
         updateTimer->start();

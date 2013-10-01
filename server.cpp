@@ -42,23 +42,27 @@ bool Server::underLoaded() {
  *  Distibuted Voronoi
  ***********************************/
 
-void myUnique(std::vector<Point> *points) {
+std::vector<Point> myUnique(std::vector<Point> points) {
     Point curPoint;
     Point compPoint;
-    for (unsigned int i=0;i<points->size()-1; i++){
-        curPoint = points->at(i);
-        for(unsigned int j=i+1;j<points->size();j++){
-            compPoint = points->at(j);;
+    std::vector<Point> uniques;
+    bool dup;
+    for (unsigned int i=0;i<points.size()-1; i++){
+        dup = false;
+        curPoint = points.at(i);
+        for(unsigned int j=i+1;j<points.size();j++){
+            compPoint = points.at(j);
             if(curPoint.equal(compPoint)) {
-                points->erase(points->begin()+j);
+//                points->erase(points->begin()+j);
+                dup = true;
+                break;
             }
         }
+        if(!dup)
+            uniques.push_back(curPoint);
     }
-
-    //test last
-    if (points->back().equal(*(points->end()-2))){
-        points->erase(points->end() -1);
-    }
+    uniques.push_back(points.back());
+    return uniques;
 }
 
 bool Server::refine(Server* t) {
@@ -119,6 +123,9 @@ void Server::generateVoronoi() {
     std::vector<Point> sPoints;
     std::vector<Point> vPoints;
     std::vector<Point> points;
+    sPoints.clear();
+    vPoints.clear();
+    points.clear();
     VoronoiDiagramGenerator vdg;
     set <Server*>::iterator it;
     float x1,y1,x2,y2;
@@ -156,43 +163,30 @@ void Server::generateVoronoi() {
         vPoints.push_back(Point(x2,y2));
     }
 
-    myUnique(&vPoints);
+    vPoints = myUnique(vPoints);
     this->deleteCell();
     bool mine;
     for (unsigned int i=0;i<vPoints.size();i++) {
         mine = true;
         curPoint = vPoints[i];
         distTp = this->loc.dist(curPoint);
-        // Loop over neighs
         for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
-
-            // Calc distance between neighbour and point
             newDist = (*it)->loc.dist(curPoint);
-            if (abs(newDist - distTp) < EPS) {
-                mine = true;
-            }else{
+            if (abs(newDist - distTp) > EPS) {
                 if (newDist < distTp) {
                     mine = false;
                 }
             }
         }
         if (mine) {
-            this->addVertex(curPoint, true);
+//            this->addVertex(curPoint, false);
+            sPoints.push_back(curPoint);
         }
     }
 
-    this->vertsToVector(&sPoints);
-    myUnique(&sPoints);
-    this->deleteCell();
+//    this->vertsToVector(&sPoints);
+//    this->deleteCell();
     this->GrahamScan(sPoints);
-
-//    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
-//        // Remove possible non-neigbours
-//        if (!this->isNeigh(*it)){
-//            this->neighbours.erase(*it);
-//            (*it)->neighbours.erase(this);
-//        }
-//    }
 }
 
 /*
