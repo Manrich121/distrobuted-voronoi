@@ -93,7 +93,7 @@ public:
     void GrahamScan(std::vector<Point> p);
     void vertsToVector(std::vector<Point> *v);
     void findIntersects(Line line, std::vector<Point> *ip);
-    void checkNeighbours();
+    void removeMe(Server *t, set<Server *> excludeNeighs);
     bool isNeigh(Server* t);
 
     bool refine(Server *t);     // calculate the new cell after intercection of the halfspace between

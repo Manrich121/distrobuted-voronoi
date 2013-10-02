@@ -164,6 +164,7 @@ void VoroWindow::checkLoad() {
                 servers.push_back(newServer);
                 sCount++;
             }
+            break;
 
         }
     }

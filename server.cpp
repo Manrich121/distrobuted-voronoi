@@ -68,38 +68,30 @@ std::vector<Point> myUnique(std::vector<Point> points) {
 bool Server::refine(Server* t) {
     t->loc = this->getCenterofClients();
 
-    if (this->isNeigh(t)) {
+    set <Server*>::iterator it;
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        if ((*it )->isNeigh(t)) {
+            (*it)->neighbours.insert(t);
+            t->neighbours.insert(*it);
+        }
+    }
 
     this->neighbours.insert(t);
     t->neighbours.insert(this);
 
     this->generateVoronoi();
 
-    set <Server*>::iterator it;
-    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
-        if ((*it)->isNeigh(t) && (*it) != t) {
-            (*it)->neighbours.insert(t);
-            t->neighbours.insert(*it);
-        }
-    }
-
     for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
         (*it)->generateVoronoi();
     }
+
     return true;
-    }else{
-        return false;
-        printf("not neigh\n");
-    }
 }
 
 void Server::returnThisSite(){
     set <Server*>::iterator it;
     for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
-        (*it)->neighbours.erase(this);
-    }
-
-    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        (*it)->removeMe(this,this->neighbours);
         (*it)->generateVoronoi();
     }
 }
@@ -239,6 +231,7 @@ void Server::deleteCell(){
     deleteMyVertex(this->cell.origin);
     this->cell.origin = NULL;
     this->cell.n = 0;
+    this->cell.rmax =0;
 }
 
 void Server::deleteMyVertex(Vertex* v) {
@@ -249,14 +242,22 @@ void Server::deleteMyVertex(Vertex* v) {
     }
 }
 
-void Server::checkNeighbours() {
+void Server::removeMe(Server* t, set <Server*> excludeNeighs) {
     set <Server*>::iterator it;
-    set <Server*> tmpNeig = this->neighbours;
-    for(it = tmpNeig.begin(); it != tmpNeig.end(); it++) {
-        if (!this->isNeigh(*it)) {              // If not neigbour anymore
-            this->neighbours.erase(*it);
-            (*it)->neighbours.erase(this);
+    this->neighbours.erase(t);
+    this->generateVoronoi();
+    for (it=this->neighbours.begin(); it != this->neighbours.end();it++){
+        if(*it != this){
+            if(excludeNeighs.find(*it) == excludeNeighs.end()){     // Not in excludeList
+                (*it)->neighbours.erase(t);
+                (*it)->generateVoronoi();
+            }
         }
+    }
+    // chech neigbours of t
+    for (it = excludeNeighs.begin(); it != excludeNeighs.end();it++){
+        if(*it != this && this->isNeigh(*it))
+            this->neighbours.insert(*it);
     }
 }
 

@@ -37,6 +37,7 @@ void VoronoiDisplayer::paintEvent(QPaintEvent*) {
     for (int i=0;i<vPoints.size()-1;i++){
         painter.drawLine(vPoints[i].x(), vPoints[i].y(), vPoints[i+1].x(), vPoints[i+1].y());
     }
+    painter.drawLine(vPoints.front().x(), vPoints.front().y(), vPoints.back().x(), vPoints.back().y());
 }
 
 QPoint VoronoiDisplayer::pointToQp(Point p) {
