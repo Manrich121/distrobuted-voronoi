@@ -29,7 +29,7 @@ VoroWindow::VoroWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::VoroWi
 
     //Update timer
     this->updateTimer = new QTimer();
-    this->updateTimer->setInterval(100);
+    this->updateTimer->setInterval(50);
     connect(this->updateTimer, SIGNAL(timeout()), this, SLOT(clientUpdate()));
 //    connect(updateTimer, SIGNAL(timeout()), this, SLOT(checkLoad()));
     updateTimer->start();
@@ -192,7 +192,7 @@ void VoroWindow::on_pushButton_2_clicked()
         updateTimer->stop();
 
 
-        for(int i=0;i<servers.size();i++){
+        for(unsigned int i=0;i<servers.size();i++){
             // debugging
             std::vector<Point> vs;
             servers.at(i)->vertsToVector(&vs);

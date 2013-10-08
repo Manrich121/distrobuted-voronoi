@@ -18,20 +18,22 @@ SOURCES += main.cpp\
     point.cpp \
     quadwindow.cpp \
     client.cpp \
-    ConvexHullAlgs.cpp \
     Vector.cpp \
     VoronoiDiagramGenerator.cpp \
-    voronoidisplayer.cpp
+    voronoidisplayer.cpp \
+    GrahamScanConvexHull.cpp \
+    ConvexHull.cpp
 
 HEADERS  += vorowindow.h \
     server.h \
     point.h \
     quadwindow.h \
     client.h \
-    ConvexHullAlgs.h \
     Vector.h \
     VoronoiDiagramGenerator.h \
-    voronoidisplayer.h
+    voronoidisplayer.h \
+    GrahamScanConvexHull.h \
+    ConvexHull.h
 
 FORMS    += vorowindow.ui \
     quadwindow.ui \
