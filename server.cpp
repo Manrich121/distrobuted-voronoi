@@ -418,16 +418,29 @@ bool Server::pointInPolygon(Point p) {
     std::vector<Point> verts;
     vertsToVector(&verts);
 
+    verts = myUnique(verts);
     for (i=0; i<polySides; i++) {
         polyYi = verts[i].y();
         polyXi = verts[i].x();
         polyYj = verts[j].y();
         polyXj = verts[j].x();
 
-        if ( ((polyYi>y) != (polyYj>y)) &&
-             (x < (polyXj-polyXi) * (y-polyYi) / (polyYj-polyYi) + polyXi) ) {
-            oddNodes =! oddNodes;
+//        if ((polyYi<y && polyYj>=y || polyYj< y && polyYi>=y) &&  (polyXi<=x || polyXj<=x)) {
+//          if (polyXi+(y-polyYi)/(polyYj-polyYi)*(polyXj-polyXi)<=x) {
+//            oddNodes=!oddNodes;
+//          }
+//        }
+        if ((polyYi >= y) != (polyYj >= y)) {
+          if (polyXi+(polyXj-polyXi)*(y-polyYi)/(polyYj-polyYi)>=x) {
+            oddNodes=!oddNodes;
+          }
         }
+
+        /*
+         *if( ( (points[i].y) >= point.y != (points[j].y >= point.y) ) &&
+        (point.x <= (points[j].x - points[i].x) * (point.y - points[i].y) / (points[j].y - points[i].y) + points[i].x)
+      )
+         */
 
         j=i;
     }
@@ -781,7 +794,8 @@ void Server::ownership(Client* c) {
 
 #ifdef _DEBUG
     if (!found) {
-        printf("Client bug");
+         printf("Client bug");
+        this->pointInPolygon(c->loc);
     }
 #endif
 }

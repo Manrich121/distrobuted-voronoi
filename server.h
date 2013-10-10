@@ -8,7 +8,6 @@
 #include <algorithm>    // std::sort
 #include "point.h"
 #include "client.h"
-#include "ConvexHullAlgs.h"
 #include "ConvexHull.h"
 #include "GrahamScanConvexHull.h"
 
