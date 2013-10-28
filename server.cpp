@@ -1,7 +1,9 @@
 #include <cstdio>
 #include "server.h"
+#include <ctime>
 
 #define EPS 0.01
+#define REPCOUNT 1000000
 
 Server::Server(){
     loc = Point(0,0);
@@ -37,7 +39,7 @@ bool Server::isLoaded() {
 bool Server::underLoaded() {
     if (VORO)
         return (!this->master && this->myClients.size()<MINCLIENTS);
-    return (this->lvl !=-1 && this->myClients.size()<MINCLIENTS && this->cell.n==1);
+    return (this->lvl !=-1 && this->myClients.size()<MINCLIENTS);
 }
 
 /************************************
@@ -114,6 +116,9 @@ Point Server::getCenterofClients(){
 }
 
 void Server::generateVoronoi() {
+    clock_t start = clock();
+
+    for(unsigned long k=0;k<REPCOUNT;k++){
     std::vector<Point> sPoints;
     std::vector<Point> vPoints;
     std::vector<Point> points;
@@ -166,6 +171,13 @@ void Server::generateVoronoi() {
         distTp = this->loc.dist(curPoint);
         for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
             newDist = (*it)->loc.dist(curPoint);
+//            if(distTp < newDist){
+//                mine = true;
+//            }else if(abs(newDist - distTp) < EPS) {
+//                mine = true;
+//            }else if(newDist < distTp){
+//                mine = false;
+//            }
             if (abs(newDist - distTp) > EPS) {
                 if (newDist < distTp) {
                     mine = false;
@@ -177,6 +189,12 @@ void Server::generateVoronoi() {
         }
     }
     this->GrahamScan(sPoints);
+
+    }
+    clock_t end = clock();
+    double cpu_time = static_cast<double>( end - start )/REPCOUNT;
+    printf("generateVoronoi() comp_time = %f \n",cpu_time);
+
 }
 
 /*
@@ -540,8 +558,7 @@ void Server::addRect(Rectangle* r) {
  *  Can only devide upto level 2.
  */
 bool Server::devide() {
-
-    if (this->lvl == 2) {
+    if (this->lvl == 3) {
         return false;
     }
         // Get Rect
@@ -563,7 +580,7 @@ bool Server::devide() {
 
         // Set location in topLeft rect and increase lvl
         this->loc = Point((p5.x()+p1.x())/2, (p5.y()+p1.y())/2);
-        this->lvl++;
+        this->lvl++;        
         return true;
 }
 
@@ -572,6 +589,7 @@ bool Server::devide() {
  */
 
 bool Server::merge() {
+
     std::list<Rectangle*>::iterator it;
     Rectangle* curRect;
     Rectangle* newR = (*cell.rect.begin());
@@ -590,20 +608,12 @@ bool Server::merge() {
             newR->botRight = curRect->botRight;
         }
     }
-
-#ifdef _DEBUG
-    if (this->master) {
-        if (!(newR->topLeft.equal(Point(0,0)) && newR->botRight.equal(Point(500,500)))) {
-            printf("Master bug");
-        }
-    }
-#endif
-
     this->cell.n=0;
     this->cell.rect.clear();
     this->addRect(newR);
     this->lvl--;
     this->loc = Point((newR->topLeft.x()+newR->botRight.x())/2, (newR->topLeft.y()+newR->botRight.y())/2);
+
     return true;
 }
 
@@ -637,14 +647,15 @@ bool Server::transfer(Server *t) {
 
     this->checkOwnership();
 
-//    while (this->isLoaded()) {
-//        curRect = (*this->cell.rect.rbegin());
-//        this->cell.rect.pop_back();
-//        this->cell.n--;
-//        t->addRect(curRect);
-//        t->addAdjacent(this);
-//        this->checkOwership();
-//    }
+    if (this->isLoaded() && this->cell.n >1) {
+        curRect = (*this->cell.rect.rbegin());
+        p1 = curRect->topLeft;
+        p2 = curRect->botRight;
+        this->cell.rect.pop_back();
+        this->cell.n--;
+        t->addRect(curRect);
+        this->checkOwnership();
+    }
 
 
     // test all neighbours possible adjacent
@@ -653,10 +664,10 @@ bool Server::transfer(Server *t) {
     for(it = tmpNeig.begin(); it != tmpNeig.end(); it++) {
         if ((*it)!=t) {
             t->addAdjacent(*it);
-            (*it)->neighbours.erase(this);
+            (*it)->addAdjacent(t);
+//            (*it)->neighbours.erase(this);
             (*it)->addAdjacent(this);
-            this->neighbours.erase(*it);
-            this->addAdjacent(*it);
+//            this->neighbours.erase(*it);
         }
     }
 
@@ -673,38 +684,38 @@ bool Server::returnArea() {
     set <Server*>::iterator it;
     set <Client*>::iterator cit;
 
-    if (this->parent==NULL || this->parent->lvl != this->lvl){
+    if (this->parent==NULL || this->parent->lvl != this->lvl || this->childCount > 0){
         return false;
     }
 
-    if (this->childCount == 0 ) {
+
+    for(int i=0;i<this->cell.n;i++){
         Rectangle* curR = (*this->cell.rect.rbegin());
-
-        // Remove self from parent
-        this->parent->childCount--;
         this->parent->addRect(curR);
-
-        this->parent->merge();
-
-
-        // Transfer all myClients
-        for (cit = this->myClients.begin(); cit != this->myClients.end();cit++) {
-            this->parent->myClients.insert(*cit);
-        }
-
-        this->parent->checkOwnership();
-
-        // Remove me from all neighbour lists
-        for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
-            this->parent->addAdjacent(*it);
-            (*it)->neighbours.erase(this);
-        }
-
-        // Set lvl be deleted
-        this->lvl = -1;
-        return true;
+        this->cell.rect.pop_back();
     }
-    return false;
+
+    // Remove self from parent
+    this->parent->childCount--;
+
+    this->parent->merge();
+
+    // Transfer all myClients
+    for (cit = this->myClients.begin(); cit != this->myClients.end();cit++) {
+        this->parent->myClients.insert(*cit);
+    }
+
+    this->parent->checkOwnership();
+
+    // Remove me from all neighbour lists
+    for(it = this->neighbours.begin(); it != this->neighbours.end(); it++) {
+        this->parent->addAdjacent(*it);
+        (*it)->neighbours.erase(this);
+    }
+
+    // Set lvl be deleted
+    this->lvl = -1;
+    return true;
 }
 
 /*
@@ -794,8 +805,7 @@ void Server::ownership(Client* c) {
 
 #ifdef _DEBUG
     if (!found) {
-         printf("Client bug");
-        this->pointInPolygon(c->loc);
+         printf("Client bug\n");
     }
 #endif
 }

@@ -17,7 +17,7 @@
 #define MAXCLIENTS 5
 #define MINCLIENTS 1
 #define WIDTH 800
-#define VORO true
+#define VORO false
 
 #define _DEBUG
 

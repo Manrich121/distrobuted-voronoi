@@ -68,7 +68,7 @@ void QuadWindow::paintEvent(QPaintEvent*) {
         s = out.str();
 
         pen.setWidth(5);
-        pen.setColor(*c[i]);
+        pen.setColor(*c[i%16]);
         painter.setPen(pen);
 
         if ((*sit)->lvl == -1) {
