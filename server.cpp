@@ -360,24 +360,6 @@ void Server::GrahamSort(std::vector<Point> points) {
     this->addVertex(points[i],true);
 }
 
-//void Server::GrahamScan(std::vector<Point> p) {
-//    vector<Vector> *points = new vector<Vector>;
-//    vector<Vector> *convexHull = new vector<Vector>;
-//    float znew = 0.0f;
-//    float wnew = 1.0f;
-
-//    for (unsigned int i=0; i< p.size();i++) {
-//        points->push_back(Vector(p[i].x(),p[i].y(), znew, wnew));
-//    }
-
-//    if(!ConvexHullAlgs::GrahamsScan(convexHull, points))
-//        printf("error computing convex hull\n");
-
-//    for (unsigned int i=0;i<convexHull->size();i++){
-//        this->addVertex(Point(convexHull->at(i).x,convexHull->at(i).y),true);
-//    }
-
-//}
 
 void Server::GrahamScan(std::vector<Point> p) {
     std::vector<point2d> points;
@@ -558,7 +540,7 @@ void Server::addRect(Rectangle* r) {
  *  Can only devide upto level 2.
  */
 bool Server::devide() {
-    if (this->lvl == 3) {
+    if (this->lvl == 2) {
         return false;
     }
         // Get Rect

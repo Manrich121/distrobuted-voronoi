@@ -117,12 +117,10 @@ void QuadWindow::addClient() {
     std::string s;
     std::stringstream out;
 
-    if (!(*servers.rbegin())->isLoaded()) {
-        (*servers.rbegin())->myClients.insert(new Client((*servers.rbegin())->loc,WIDTH));
-        out << ++clientCount;
-        s = out.str();
-        ui->addClients->setText(QString(s.c_str()));
-    }
+    (*servers.rbegin())->myClients.insert(new Client((*servers.rbegin())->loc,WIDTH));
+    out << ++clientCount;
+    s = out.str();
+    ui->addClients->setText(QString(s.c_str()));
 
     if (clientCount >=6) {
         loadTimer->stop();
